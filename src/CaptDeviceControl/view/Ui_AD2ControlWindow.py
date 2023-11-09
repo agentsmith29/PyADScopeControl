@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'AD2ControlWindow.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.5.2
+## Created by: Qt User Interface Compiler version 6.5.3
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -19,13 +19,15 @@ from PySide6.QtWidgets import (QApplication, QComboBox, QFrame, QGridLayout,
     QGroupBox, QLCDNumber, QLabel, QLayout,
     QMainWindow, QMenuBar, QPushButton, QSizePolicy,
     QSpinBox, QStatusBar, QVBoxLayout, QWidget)
-#import resources_rc
+
+from fswidgets import PlayPushButton
+import resources_rc
 
 class Ui_AD2ControlWindow(object):
     def setupUi(self, AD2ControlWindow):
         if not AD2ControlWindow.objectName():
             AD2ControlWindow.setObjectName(u"AD2ControlWindow")
-        AD2ControlWindow.resize(539, 765)
+        AD2ControlWindow.resize(641, 765)
         AD2ControlWindow.setStyleSheet(u"")
         self.centralwidget = QWidget(AD2ControlWindow)
         self.centralwidget.setObjectName(u"centralwidget")
@@ -684,7 +686,7 @@ class Ui_AD2ControlWindow(object):
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.verticalLayout.setSizeConstraint(QLayout.SetMinimumSize)
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
-        self.btn_start_capture = QPushButton(self.verticalFrame_1)
+        self.btn_start_capture = PlayPushButton(self.verticalFrame_1)
         self.btn_start_capture.setObjectName(u"btn_start_capture")
         self.btn_start_capture.setEnabled(False)
         self.btn_start_capture.setMinimumSize(QSize(60, 60))
@@ -718,7 +720,7 @@ class Ui_AD2ControlWindow(object):
 
         self.verticalLayout.addWidget(self.btn_start_capture)
 
-        self.btn_stop = QPushButton(self.verticalFrame_1)
+        self.btn_stop = PlayPushButton(self.verticalFrame_1)
         self.btn_stop.setObjectName(u"btn_stop")
         self.btn_stop.setEnabled(False)
         self.btn_stop.setMinimumSize(QSize(60, 60))
@@ -772,7 +774,7 @@ class Ui_AD2ControlWindow(object):
         AD2ControlWindow.setCentralWidget(self.centralwidget)
         self.menubar = QMenuBar(AD2ControlWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 539, 22))
+        self.menubar.setGeometry(QRect(0, 0, 641, 22))
         AD2ControlWindow.setMenuBar(self.menubar)
         self.statusbar = QStatusBar(AD2ControlWindow)
         self.statusbar.setObjectName(u"statusbar")

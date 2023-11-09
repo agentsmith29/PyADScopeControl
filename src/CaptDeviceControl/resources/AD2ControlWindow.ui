@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>539</width>
+    <width>641</width>
     <height>765</height>
    </rect>
   </property>
@@ -825,7 +825,7 @@ QTabBar::tab:selected {
                 <number>0</number>
                </property>
                <item>
-                <widget class="QPushButton" name="btn_start_capture">
+                <widget class="PlayPushButton" name="btn_start_capture">
                  <property name="enabled">
                   <bool>false</bool>
                  </property>
@@ -851,7 +851,7 @@ QTabBar::tab:selected {
 	border-left: 22px solid transparent;
 	text-align: left;
 	padding-left: 44px;
-    background-image: url(:/icons/images/icons/cil-media-play.png);
+    background-image: url(:/icons/icons/cil-media-play.png);
 }
 
 QPushButton:hover {
@@ -875,7 +875,7 @@ QPushButton:disabled {
                 </widget>
                </item>
                <item>
-                <widget class="QPushButton" name="btn_stop">
+                <widget class="PlayPushButton" name="btn_stop">
                  <property name="enabled">
                   <bool>false</bool>
                  </property>
@@ -901,7 +901,7 @@ QPushButton:disabled {
 	border-left: 22px solid transparent;
 	text-align: left;
 	padding-left: 44px;
-    background-image: url(:/icons/images/icons/cil-media-stop.png)
+    background-image: url(:/icons/icons/cil-media-stop.png)
 }
 
 QPushButton:hover {
@@ -945,15 +945,22 @@ QPushButton:disabled {
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>539</width>
+     <width>641</width>
      <height>22</height>
     </rect>
    </property>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>PlayPushButton</class>
+   <extends>QPushButton</extends>
+   <header>fswidgets.h</header>
+  </customwidget>
+ </customwidgets>
  <resources>
-  <include location="../../resources.qrc"/>
+  <include location="resources.qrc"/>
  </resources>
  <connections/>
 </ui>

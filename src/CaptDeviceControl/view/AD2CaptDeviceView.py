@@ -346,7 +346,7 @@ class ControlWindow(QMainWindow):
         if start_recording:
             self._ui.btn_stop.setEnabled(True)
             #self._ui.btn_start_capture.setStyleSheet(PlayPushButton.style_pause())
-            #self._ui.btn_start_capture.pause()
+            self._ui.btn_start_capture.pause()
             self._ui.btn_start_capture.setText("Pause Capture")
 
     def _on_stop_recording_changed(self, stop_recording):
@@ -354,13 +354,13 @@ class ControlWindow(QMainWindow):
         if stop_recording:
             self._ui.btn_stop.setEnabled(False)
             #self._ui.btn_start_capture.setStyleSheet(CSSPlayPushButton.style_play())
-            #self._ui.btn_start_capture.play()
+            self._ui.btn_start_capture.play()
             self._ui.btn_start_capture.setText("Start Capture")
 
     def _on_pause_recording_changed(self, pause_recording):
         self._ui.btn_stop.setEnabled(True)
         #self._ui.btn_start_capture.setStyleSheet(CSSPlayPushButton.style_play())
-        #self._ui.btn_start_capture.play()
+        self._ui.btn_start_capture.play()
 
     def _on_reset_recording_changed(self, reset_recording):
         pass
