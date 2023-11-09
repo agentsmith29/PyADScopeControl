@@ -1,11 +1,11 @@
 #!/.venv/Scripts/python
 
-from ctypes import c_int, byref, create_string_buffer, cdll, c_int32
+from ctypes import c_int, byref, create_string_buffer, cdll, c_int32, c_uint, c_double
 
 from controller.BaseAD2CaptDevice import BaseAD2CaptDevice
 from model.AD2CaptDeviceModel import AD2CaptDeviceModel
 
-from constants.dwfconstants import enumfilterUSB, enumfilterType
+from constants.dwfconstants import enumfilterUSB, enumfilterType, enumfilterDemo
 
 
 class AD2CaptDeviceController(BaseAD2CaptDevice):
@@ -16,12 +16,45 @@ class AD2CaptDeviceController(BaseAD2CaptDevice):
 
         # This is required for acquiring the data
 
-
     def connect_device(self, device_id):
-        self.start_device_process(device_id, channel=0)
+        self.start_device_process(device_id)
         return True
 
-    
+    def read_hardware_config(self, iDevice):
+        hw_info_dict = {}
+        hdwf = c_int()
+        int0 = c_int()
+        int1 = c_int()
+        uint0 = c_uint()
+        dbl0 = c_double()
+        dbl1 = c_double()
+        dbl2 = c_double()
+        self.dwf.FDwfDeviceConfigOpen(c_int(iDevice), c_int(0), byref(hdwf))
+        if hdwf.value == 0:
+            szerr = create_string_buffer(512)
+            self.dwf.FDwfGetLastErrorMsg(szerr)
+            raise Exception(str(szerr.value))
+
+        self.dwf.FDwfAnalogInChannelCount(hdwf, byref(int0))
+        hw_info_dict["analog_in_channels"] = int(int0.value)
+
+        self.dwf.FDwfAnalogIOChannelCount(hdwf, byref(int0))
+        hw_info_dict["analog_io_channels"] = int(int0.value)
+
+        self.dwf.FDwfAnalogInBufferSizeInfo(hdwf, 0, byref(int0))
+        hw_info_dict["buffer_size"] = int(int0.value)
+
+        self.dwf.FDwfAnalogInBitsInfo(hdwf, byref(int0))
+        hw_info_dict["adc_bits"] = int(int0.value)
+
+        self.dwf.FDwfAnalogInChannelRangeInfo(hdwf, byref(dbl0), byref(dbl1), byref(dbl2))
+        hw_info_dict["range"] = (int(dbl0.value), int(dbl1.value), int(dbl2.value))
+
+        self.dwf.FDwfAnalogInChannelOffsetInfo(hdwf, byref(dbl0), byref(dbl1), byref(dbl2))
+        hw_info_dict["offset"] = (int(dbl0.value), int(dbl1.value), int(dbl2.value))
+
+        return hw_info_dict
+
     def discover_connected_devices(self):
         # enumerate connected devices
         connected_devices = []
@@ -32,8 +65,8 @@ class AD2CaptDeviceController(BaseAD2CaptDevice):
         #                     (c_int32(enumfilterType.value | enumfilterAudio.value), 'Audio'),
         #                     (c_int32(enumfilterType.value | enumfilterDemo.value), 'Demo')]:
         cDevice = c_int()
-        filter, type = (c_int32(enumfilterType.value | enumfilterUSB.value), 'USB')
-        #filter, type = (c_int32(enumfilterType.value | enumfilterDemo.value), 'USB')
+        # filter, type = (c_int32(enumfilterType.value | enumfilterUSB.value), 'USB')
+        filter, type = (c_int32(enumfilterType.value | enumfilterUSB.value | enumfilterDemo.value), 'USB')
         self.dwf.FDwfEnum(filter, byref(cDevice))
         self.model.num_of_connected_devices = cDevice
 
@@ -43,21 +76,27 @@ class AD2CaptDeviceController(BaseAD2CaptDevice):
         for iDevice in range(0, cDevice.value):
             self.dwf.FDwfEnumDeviceName(c_int(iDevice), devicename)
             self.dwf.FDwfEnumSN(c_int(iDevice), serialnum)
-            connected_devices.append({
+            hw_info = self.read_hardware_config(iDevice)
+            srn = str(serialnum.value.decode('UTF-8'))
+            if "demo" in srn.lower():
+                type = "Simulator "
+            con_dev_dict = {
                 'type': type,
                 'device_id': int(iDevice),
                 'device_name': str(devicename.value.decode('UTF-8')),
-                'serial_number': str(serialnum.value.decode('UTF-8'))
-            })
+                'serial_number': srn
+            }
+            con_dev_dict = dict(con_dev_dict, **hw_info)
+            connected_devices.append(con_dev_dict)
+
         self.logger.info(connected_devices)
         self.model.connected_devices = connected_devices
-        self.logger.info(f"Discoverd {len(self.model.connected_devices)} devices.")
+        self.logger.info(f"Discovered {len(self.model.connected_devices)} devices.")
 
         return self.model.connected_devices
 
     def close_device(self):
         self.end_process_flag.value = 1
-
 
     # def _open_device(self, device_index):
     #     devicename = create_string_buffer(64)

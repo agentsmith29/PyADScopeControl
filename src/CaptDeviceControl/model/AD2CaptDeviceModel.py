@@ -28,6 +28,7 @@ class AD2CaptDeviceSignals(QObject):
 
     # Acquisition Settings
     sample_rate_changed = Signal(int)
+    streaming_rate_changed = Signal(int)
     selected_ain_channel_changed = Signal(int)
     duration_streaming_history_changed = Signal(int)
 
@@ -120,6 +121,8 @@ class AD2CaptDeviceModel:
 
         # Acquisition Settings
         self._sample_rate: int = self.ad2captdev_config.sample_rate.value
+        self._streaming_rate: int = self.ad2captdev_config.streaming_rate.value
+
         self._selected_ain_channel: int = 0
         self._duration_streaming_history: float = 0
 
@@ -286,8 +289,18 @@ class AD2CaptDeviceModel:
     @sample_rate.setter
     def sample_rate(self, value):
         self._sample_rate = value
-        self.signals.sample_rate_changed.emit(self._sample_rate)
         self.ad2captdev_config.sample_rate.set(self._sample_rate)
+        self.signals.sample_rate_changed.emit(self._sample_rate)
+
+    @property
+    def streaming_rate(self):
+        return self._sample_rate
+
+    @streaming_rate.setter
+    def streaming_rate(self, value):
+        self._streaming_rate = value
+        self.ad2captdev_config.streaming_rate.set(self._streaming_rate)
+        self.signals.streaming_rate_changed.emit(self._streaming_rate)
 
     @property
     def selected_ain_channel(self) -> int:
@@ -299,6 +312,7 @@ class AD2CaptDeviceModel:
             self._selected_ain_channel = int(value.value)
         else:
             self._selected_ain_channel = int(value)
+        self.ad2captdev_config.ain_channel.set(self._selected_ain_channel)
         self.signals.selected_ain_channel_changed.emit(self.selected_ain_channel)
 
     @property

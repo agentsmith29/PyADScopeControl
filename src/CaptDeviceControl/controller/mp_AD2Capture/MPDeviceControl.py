@@ -6,6 +6,7 @@ christoph.schmidt@tugraz.at
 """
 
 import os
+import random
 import sys
 import time
 from ctypes import c_int, byref, c_double, cdll, create_string_buffer, c_int32
@@ -13,7 +14,7 @@ from ctypes import c_int, byref, c_double, cdll, create_string_buffer, c_int32
 from controller.mp_AD2Capture.AD2StateMPSetter import AD2StateMPSetter
 from model.AD2Constants import AD2Constants
 from constants.dwfconstants import acqmodeRecord, DwfStateConfig, DwfStatePrefill, DwfStateArmed, enumfilterType, \
-    enumfilterUSB
+    enumfilterUSB, enumfilterDemo
 
 
 # ======================================================================================================================
@@ -38,7 +39,7 @@ def _mp_log_warning(msg, prefix="AD2 Thread"):
 # ======================================================================================================================
 # Process Main function, used for capturing and streaming data
 # ======================================================================================================================
-def mp_capture(data_queue, capture_data_queue, state_queue,
+def mp_capture(stream_data_queue, capture_data_queue, state_queue,
                start_capture, end_process,
                device_id, channel, sample_rate):
     """
@@ -49,7 +50,7 @@ def mp_capture(data_queue, capture_data_queue, state_queue,
     :param end_process:
     :param device_id:
     :param sample_rate:
-    :param data_queue: Queue to put the data into.
+    :param stream_data_queue: Queue to put the data into.
     :param channel: Channel to capture data from.
     :return: None
     """
@@ -58,8 +59,8 @@ def mp_capture(data_queue, capture_data_queue, state_queue,
     # Using the modulo operation allow us to determine the variable stream_n that is required
     # to scale down the streaming rate.
     stream_rate = 1000  # Hz
-    stream_n = sample_rate / stream_rate
-    stream_sample_cnt = 0
+    #stream_n = sample_rate / stream_rate
+    #stream_sample_cnt = 0
 
     time_capture_started = 0
     capturing_notified = False
@@ -69,9 +70,11 @@ def mp_capture(data_queue, capture_data_queue, state_queue,
 
     ad2_state.pid = os.getpid()
 
-    ad2_state.channel = channel
+    ad2_state.selected_ain_channel = channel
     ad2_state.sample_rate = sample_rate
-    _mp_log_debug(f"Setting up device {device_id} with channel {channel} and acquisition rate {sample_rate} Hz")
+    _mp_log_debug(f"Setting up device {device_id} with "
+                  f"channel {ad2_state.selected_ain_channel} and "
+                  f"acquisition rate {ad2_state.sample_rate} Hz")
 
     dwf, hdwf = _mp_open_device(device_id, ad2_state)
 
@@ -95,10 +98,11 @@ def mp_capture(data_queue, capture_data_queue, state_queue,
     dwf.FDwfAnalogInConfigure(hdwf, c_int(0), c_int(1))
 
     _mp_log_info("Device configured. Starting acquisition.")
-    ad2_state.selected_ain_channel = channel
+
     cSamples = 0
     ad2_state.device_ready = True
     capture_samples = 0
+
     while end_process.value == False:
         # Checks the state of the acquisition. To read the data from the device, set fReadData to TRUE. For
         # single acquisition mode, the data will be read only when the acquisition is finished
@@ -132,12 +136,17 @@ def mp_capture(data_queue, capture_data_queue, state_queue,
             #    cAvailable = c_int(self.ad2capt_model.n_samples - cSamples)
             rgdSamples = (c_double * cAvailable.value)()
 
-            dwf.FDwfAnalogInStatusData(hdwf, c_int(ad2_state.channel), byref(rgdSamples),
+            dwf.FDwfAnalogInStatusData(hdwf, c_int(ad2_state.selected_ain_channel), byref(rgdSamples),
                                        cAvailable)  # get channel data
             # Print how many samples are available
             status = {"available": cAvailable.value, 'captured': 0, 'lost': cLost.value,
                       'corrupted': cCorrupted.value, "time": time.time()}
-            data_queue.put(([(float(s)) for it, s in enumerate(rgdSamples)], status))
+            print(status)
+            time.sleep(random.random())
+            #print(len(rgdSamples))
+            stream_data_queue.put(
+                ([(float(s)) for s in rgdSamples], status)
+            )
 
             if start_capture.value == 1:
                 if not capturing_notified:
@@ -209,7 +218,7 @@ def _t_setup_sine_wave(dwf, hdwf, ad2_state: AD2StateMPSetter):
     _mp_log_debug("Generating AM sine wave...")
     dwf.FDwfAnalogOutNodeEnableSet(hdwf, c_int(0), c_int(0), c_int(1))  # carrier
     dwf.FDwfAnalogOutNodeFunctionSet(hdwf, c_int(0), c_int(0), c_int(1))  # sine
-    dwf.FDwfAnalogOutNodeFrequencySet(hdwf, c_int(0), c_int(0), c_double(1))
+    dwf.FDwfAnalogOutNodeFrequencySet(hdwf, c_int(0), c_int(0), c_double(0.1))
     dwf.FDwfAnalogOutNodeAmplitudeSet(hdwf, c_int(0), c_int(0), c_double(1))
     # dwf.FDwfAnalogOutNodeOffsetSet(hdwf, c_int(0), c_int(0), c_double(0.5))
     # dwf.FDwfAnalogOutNodeEnableSet(hdwf, c_int(0), c_int(2), c_int(1))  # AM
@@ -250,7 +259,7 @@ def _mp_discover_connected_devices(dwf):
     #                     (c_int32(enumfilterType.value | enumfilterAudio.value), 'Audio'),
     #                     (c_int32(enumfilterType.value | enumfilterDemo.value), 'Demo')]:
     cDevice = c_int()
-    filter, type = (c_int32(enumfilterType.value | enumfilterUSB.value), 'USB')
+    filter, type = (c_int32(enumfilterType.value | enumfilterDemo.value| enumfilterUSB.value), 'USB')
     # filter, type = (c_int32(enumfilterType.value | enumfilterDemo.value), 'DEMO')
     _mp_log_debug(f"Filtering {type} devices...")
     dwf.FDwfEnum(filter, byref(cDevice))
@@ -268,7 +277,7 @@ def _mp_discover_connected_devices(dwf):
             'device_name': str(devicename.value.decode('UTF-8')),
             'serial_number': str(serialnum.value.decode('UTF-8'))
         })
-        _mp_log_debug(f"Found {type} device: {devicename.value.decode('UTF-8')} ({serialnum.value.decode('UTF-8')})")
+        #_mp_log_debug(f"Found {type} device: {devicename.value.decode('UTF-8')} ({serialnum.value.decode('UTF-8')})")
     # print(connected_devices)
     # print(f"Discoverd {len(self.model.connected_devices)} devices.")
     return connected_devices

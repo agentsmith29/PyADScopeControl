@@ -1,4 +1,5 @@
 import logging
+from collections import deque
 
 import numpy as np
 
@@ -31,6 +32,8 @@ class ControlWindow(QMainWindow):
 
         self._ui = Ui_AD2ControlWindow()
         self._ui.setupUi(self)
+        self._ui.btn_start_capture = PlayPushButton(self._ui.btn_start_capture)
+
         #
 
         self.capt_info = WidgetCapturingInformation()
@@ -47,11 +50,11 @@ class ControlWindow(QMainWindow):
 
         # Timer for periodically updating the plot
         self.capture_update_timer = QTimer()
-        self.capture_update_timer.setInterval(50)
+        self.capture_update_timer.setInterval(10)
         self.capture_update_timer.timeout.connect(self._on_capture_update_plot)
 
         self.stream_update_timer = QTimer()
-        self.stream_update_timer.setInterval(50)
+        self.stream_update_timer.setInterval(10)
         self.stream_update_timer.timeout.connect(self._on_stream_update_timer_timeout)
 
         self.stream_samples_frequency = 1000
@@ -75,8 +78,13 @@ class ControlWindow(QMainWindow):
         self._ui.btn_start_capture.clicked.connect(self.on_btn_start_capture_clicked)
         self._ui.btn_stop.clicked.connect(self.on_btn_stop_clicked)
 
-        # self._ui.sb_acquisition_rate.valueChanged.connect(self.on_btn_stop_clicked)
-        self.model.ad2captdev_config.sample_rate.view.add_new_view(self._ui.sb_acquisition_rate)
+        self._ui.cb_device_select.currentIndexChanged.connect(self._on_device_selected_changed)
+        self._ui.cb_channel_select.currentIndexChanged.connect(self._ui_on_selected_ain_changed)
+
+        self._ui.sb_acquisition_rate.valueChanged.connect(self._ui_on_sample_rate_changed)
+        #self.model.ad2captdev_config.sample_rate.view.add_new_view(self._ui.sb_acquisition_rate)
+
+        #self.model.ad2captdev_config.ain_channel.view.add_new_view(self._ui.cb_channel_select)
         #()
 
         self._ui.cb_duration_streaming_history.currentIndexChanged.connect(
@@ -97,8 +105,8 @@ class ControlWindow(QMainWindow):
         self.model.signals.device_index_changed.connect(self._on_device_index_changed)
 
         # Acquisition Settings
-        self.model.signals.sample_rate_changed.connect(self._on_sample_rate_changed)
-        self.model.signals.selected_ain_channel_changed.connect(self._on_selected_ain_channel_changed)
+        self.model.signals.sample_rate_changed.connect(self._model_on_sample_rate_changed)
+        self.model.signals.selected_ain_channel_changed.connect(self._model_on_selected_ain_changed)
 
         # Analog In Information
         self.model.signals.ain_channels_changed.connect(self._on_ain_channels_changed)
@@ -170,6 +178,11 @@ class ControlWindow(QMainWindow):
     # ==================================================================================================================
     # Slots for Model
     # ==================================================================================================================
+    def _on_device_selected_changed(self, index):
+        # First populate the AIn box+
+        m: dict = self.model.connected_devices[index]
+        self.model.ain_channels = list(range(0, int(m['analog_in_channels'])))
+
     def _on_dwf_version_changed(self, dwf_version):
         self.dev_info.dwf_version = dwf_version
         # self.ad2_settings['DWF Version'] = dwf_version
@@ -213,16 +226,29 @@ class ControlWindow(QMainWindow):
         self.update_ad2_settings_list_view()
 
     def _on_device_index_changed(self, device_index):
-        pass
+        print(device_index)
 
     # ============== Acquisition Settings
-    def _on_sample_rate_changed(self, sample_rate: int):
+
+
+    def _model_on_sample_rate_changed(self, sample_rate: int):
         self._ui.sb_acquisition_rate.setRange(1, 1e9)
         self._ui.sb_acquisition_rate.setValue(sample_rate)
 
+    def _ui_on_sample_rate_changed(self, sample_rate: int):
+        self.model.sample_rate = sample_rate
+
+    def _model_on_selected_ain_changed(self, channel):
+        """ Gets called if the model is changed directly (should modify the UI)"""
+        self._on_selected_ain_channel_changed(channel)
+        self._ui.cb_channel_select.setCurrentIndex(channel)
+    def _ui_on_selected_ain_changed(self, channel):
+        """ Gets called if the ui changes the field (should modify the model) """
+        self._on_selected_ain_channel_changed(channel)
+        self.model.selected_ain_channel = channel
     def _on_selected_ain_channel_changed(self, channel):
         self.dev_info.analog_in_channel = channel
-        self._ui.cb_channel_select.setCurrentIndex(channel)
+
 
     # ============== Analog In Information
     def _on_ain_channels_changed(self, list_of_ad_ins):
@@ -319,19 +345,22 @@ class ControlWindow(QMainWindow):
         self.logger.debug(f"Start Recording: {start_recording}")
         if start_recording:
             self._ui.btn_stop.setEnabled(True)
-            self._ui.btn_start_capture.setStyleSheet(CSSPlayPushButton.style_pause())
+            #self._ui.btn_start_capture.setStyleSheet(PlayPushButton.style_pause())
+            #self._ui.btn_start_capture.pause()
             self._ui.btn_start_capture.setText("Pause Capture")
 
     def _on_stop_recording_changed(self, stop_recording):
         self.logger.debug(f"Stop Recording: {stop_recording}")
         if stop_recording:
             self._ui.btn_stop.setEnabled(False)
-            self._ui.btn_start_capture.setStyleSheet(CSSPlayPushButton.style_play())
+            #self._ui.btn_start_capture.setStyleSheet(CSSPlayPushButton.style_play())
+            #self._ui.btn_start_capture.play()
             self._ui.btn_start_capture.setText("Start Capture")
 
     def _on_pause_recording_changed(self, pause_recording):
         self._ui.btn_stop.setEnabled(True)
-        self._ui.btn_start_capture.setStyleSheet(CSSPlayPushButton.style_play())
+        #self._ui.btn_start_capture.setStyleSheet(CSSPlayPushButton.style_play())
+        #self._ui.btn_start_capture.play()
 
     def _on_reset_recording_changed(self, reset_recording):
         pass
@@ -363,7 +392,9 @@ class ControlWindow(QMainWindow):
     def _on_stream_update_timer_timeout(self):
         self.scope_original.clear()
         # print(self.ad2device.recorded_samples)
-        self.scope_original.plot(list(self.controller.data_dqueue)[::self.stream_n], pen=pg.mkPen(width=1))
+        self.scope_original.plot(
+            list(self.controller.streaming_data_dqueue),#[::self.stream_n],
+            pen=pg.mkPen(width=1))
         self._ui.lcd_unconsumed_stream.display(self.model.unconsumed_stream_samples)
 
 
@@ -398,7 +429,6 @@ class ControlWindow(QMainWindow):
         self.controller.stop_capture()
         self._ui.btn_start_capture.setText("Start Capture")
         self._ui.btn_stop.setEnabled(False)
-        self._ui.btn_start_capture.setStyleSheet(CSSPlayPushButton.style_play())
 
         self.capture_update_timer.stop()
         self.scope_captured.clear()
@@ -409,6 +439,7 @@ class ControlWindow(QMainWindow):
 
     def _on_cb_duration_streaming_history_currentIndexChanged(self, index):
         self.model.duration_streaming_history = self._ui.cb_duration_streaming_history.currentData()
+        self.controller.streaming_data_dqueue = deque(maxlen=int(self.model.duration_streaming_history * self.model.sample_rate))
 
     # ==================================================================================================================
     #

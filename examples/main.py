@@ -26,8 +26,9 @@ if __name__ == "__main__":
         )
 
 
-    app = QApplication()
     setup_logging()
+    app = QApplication()
+
 
     conf = CaptDevice.Config()
     conf.load("config.yaml")

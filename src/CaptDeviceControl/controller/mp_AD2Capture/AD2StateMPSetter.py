@@ -1,5 +1,7 @@
 from ctypes import c_int, c_byte
 
+from model.AD2Constants import AD2Constants
+
 
 class AD2State:
     def __init__(self):
@@ -29,7 +31,7 @@ class AD2State:
         self._aout_channels: list = []
 
         # Acquired Signal Information
-        self._acquisition_state: c_byte = c_byte()
+        self._acquisition_state: int = AD2Constants.CapturingState.STOPPED()
         self._recording_time: float = -1
         self._samples_captured: int = 0
         self._samples_lost: int = -1
@@ -38,6 +40,7 @@ class AD2State:
         # Device Status
         self._device_ready: bool = False
         self._device_capturing = False
+
 
     def reinit(self, fields: dict):
         for k, v in fields.items():
@@ -180,7 +183,7 @@ class AD2StateMPSetter(AD2State):
 
     @AD2State.selected_ain_channel.setter
     def selected_ain_channel(self, value):
-        self._selected_channel = value
+        self._selected_ain_channel = value
         self._state_queue.put(self.to_simple_class())
 
     # =========== Analog In Information

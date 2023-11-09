@@ -32,15 +32,15 @@ class BaseAD2CaptDevice(QObject):
         self.lock = Lock()
         self.proc = None
         self.stream_data_queue = Queue()
-
         self.capture_data_queue = Queue()
         self.state_queue = Queue()
+
         self.start_capture_flag = Value('i', 0, lock=self.lock)
         self.end_process_flag = Value('i', False, lock=self.lock)
 
         # Number of sa
+        self.streaming_data_dqueue: deque = None # a dqueue, initialize later
 
-        self.data_dqueue = None  # initialize later
         self.status_dqueue = deque(maxlen=int(1))
         self.unconsumed_capture_data = 0
 
@@ -84,16 +84,17 @@ class BaseAD2CaptDevice(QObject):
             self.logger.info(f"[{self.pref} Task] >>>>>>>>>>> Reset acquisition!")
 
     def _init_device_parameters(self):
-        sample_rate = int(self.model.ad2captdev_config.get_sample_rate())
-        total_samples = int(self.model.ad2captdev_config.get_total_samples())
-        channel = 0  # TODO Read channel from input
+        pass
+        #sample_rate = int(self.model.ad2captdev_config.get_sample_rate())
+        #total_samples = int(self.model.ad2captdev_config.get_total_samples())
+        #channel = 0  # TODO Read channel from input
 
-        self.model.sample_rate = int(sample_rate)
-        self.model.n_samples = int(total_samples)
-        self.model.selected_ain_channel = int(channel)
-        self.logger.info(f"AD2 device initialized {self.model.selected_ain_channel} with "
-                         f"acquisition rate {self.model.sample_rate} Hz and "
-                         f"samples {self.model.n_samples}")
+        #self.model.sample_rate = int(sample_rate)
+        #self.model.n_samples = int(total_samples)
+        #self.model.selected_ain_channel = int(channel)
+        #self.logger.info(f"AD2 device initialized {self.model.selected_ain_channel} with "
+        #                 f"acquisition rate {self.model.sample_rate} Hz and "
+        #                 f"samples {self.model.n_samples}")
 
     # ==================================================================================================================
     #
@@ -136,16 +137,17 @@ class BaseAD2CaptDevice(QObject):
         self.model.capturing_finished = False
 
     # ==================================================================================================================
-    def start_device_process(self, device_id, channel=0):
+    def start_device_process(self, device_id):
         self.logger.info(f"[{self.pref} Task] Starting capturing process...")
-        print(f"maxlen={int(self.model.duration_streaming_history * self.model.sample_rate)}")
-        self.data_dqueue = deque(maxlen=int(self.model.duration_streaming_history * self.model.sample_rate))
-        print(self.model.duration_streaming_history * self.model.sample_rate)
+        #self.logger.debug(f"Dataqueue maxlen={int(self.model.duration_streaming_history * self.model.sample_rate)}")
+        self.streaming_data_dqueue = deque(maxlen=int(self.model.duration_streaming_history * self.model.sample_rate))
+        #print(self.model.duration_streaming_history * self.model.sample_rate)
+        self.stream_data_queue.maxsize = int(self.model.duration_streaming_history * self.model.sample_rate)
         self.proc = Process(target=mp_capture,
                        args=(
                            self.stream_data_queue, self.capture_data_queue, self.state_queue,
                            self.start_capture_flag, self.end_process_flag,
-                           device_id, channel, self.model.sample_rate)
+                           device_id, self.model.selected_ain_channel, self.model.sample_rate)
                        )
         self.proc.start()
 
@@ -163,23 +165,28 @@ class BaseAD2CaptDevice(QObject):
                 [self.model.recorded_samples.append(e) for e in d]
                 # self.model.samples_captured = len(self.model.recorded_samples)
                 self.status_dqueue.append(s)
-            time.sleep(0.01)
+            #time.sleep(0.01)
         self.logger.info("Capture Data consume thread ended")
 
     def qt_stream_data(self):
+        nth_cnt = 1
+        nth = 2
         while not self.kill_thread and not bool(self.end_process_flag.value):
             while self.stream_data_queue.qsize() > 0:
                 self.model.unconsumed_stream_samples = self.stream_data_queue.qsize()
-                for d in self.stream_data_queue.get(block=True)[0]:
-                    self.data_dqueue.append(d)
-            time.sleep(0.01)
+                for d in self.stream_data_queue.get()[0]:
+                    #if nth_cnt == nth:
+                    self.streaming_data_dqueue.append(d)
+                    #    nth_cnt = 0
+                    #nth_cnt += 1
+            #time.sleep(0.01)
         self.logger.info("Streaming data consume thread ended")
 
     def qt_get_state(self):
         while not self.kill_thread and not bool(self.end_process_flag.value):
             while self.state_queue.qsize() > 0:
                 self._set_ad2state_from_process(self.state_queue.get())
-            time.sleep(0.1)
+            #time.sleep(0.1)
         self.logger.info("Status data consume thread ended")
 
     def _set_ad2state_from_process(self, ad2state: AD2State):
