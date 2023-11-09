@@ -1,0 +1,6 @@
+# - Configuration file stored 2023-11-09 09:34:42.752230 - 
+CaptDeviceConfig: #!!python/object:controller.CaptDeviceConfig
+ sample_rate: 50000 # sample_rate: None
+ total_samples: 200000 # total_samples: None
+ sample_time: 45 # sample_time: None
+ ad2_raw_out_file: "{output_directory}/measurement/ad2_raw/ad2_out_{wafer_nr}_{date}.csv" # ad2_raw_out_file: None
