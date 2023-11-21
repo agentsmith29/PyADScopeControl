@@ -2,13 +2,13 @@ import logging
 import sys
 import os
 
-sys.path.append('../src/')
+sys.path.append('..')
 
 from PySide6.QtWidgets import QApplication
 from rich.logging import RichHandler
 
 
-import src.CaptDeviceControl as CaptDevice
+import CaptDeviceControl as CaptDevice
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-# - Configuration file stored 2023-11-11 17:00:09.246929 - 
+# - Configuration file stored 2023-11-21 15:48:11.683307 - 
 CaptDeviceConfig: #!!python/object:controller.CaptDeviceConfig
  sample_rate: 50000 # Sample rate: Sample rate of the device
  streaming_rate: 500 # Streaming rate: Streaming rate in Hz (should be below 1kHz)
