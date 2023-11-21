@@ -2,7 +2,7 @@ import logging
 import sys
 import os
 
-sys.path.append('..')
+sys.path.append('../src')
 
 from PySide6.QtWidgets import QApplication
 from rich.logging import RichHandler
