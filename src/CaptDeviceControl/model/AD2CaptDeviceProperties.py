@@ -1,4 +1,4 @@
-from generics.GenericProperties import GenericProperties
+from CaptDeviceControl.generics.GenericProperties import GenericProperties
 
 
 class AD2CaptDeviceProperties(GenericProperties):

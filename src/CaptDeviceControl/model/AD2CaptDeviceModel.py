@@ -2,8 +2,8 @@ from ctypes import c_int, Array, c_byte
 
 from PySide6.QtCore import QObject, Signal
 
-from model.AD2Constants import AD2Constants
-from CaptDeviceConfig import CaptDeviceConfig as Config
+from CaptDeviceControl.model.AD2Constants import AD2Constants
+from CaptDeviceControl.CaptDeviceConfig import CaptDeviceConfig as Config
 #from MeasurementData.Properties.AD2CaptDeviceProperties import AD2CaptDeviceProperties
 
 

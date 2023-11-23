@@ -2,10 +2,12 @@
 
 from ctypes import c_int, byref, create_string_buffer, cdll, c_int32, c_uint, c_double
 
-from controller.BaseAD2CaptDevice import BaseAD2CaptDevice
-from model.AD2CaptDeviceModel import AD2CaptDeviceModel
+from CaptDeviceControl.controller.BaseAD2CaptDevice import BaseAD2CaptDevice
+from CaptDeviceControl.model.AD2CaptDeviceModel import AD2CaptDeviceModel
+#from .controller.BaseAD2CaptDevice import BaseAD2CaptDevice
+#from .model.AD2CaptDeviceModel import AD2CaptDeviceModel
 
-from constants.dwfconstants import enumfilterUSB, enumfilterType, enumfilterDemo
+from CaptDeviceControl.constants.dwfconstants import enumfilterUSB, enumfilterType, enumfilterDemo
 
 
 class AD2CaptDeviceController(BaseAD2CaptDevice):

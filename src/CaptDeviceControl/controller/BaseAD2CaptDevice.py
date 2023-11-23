@@ -5,10 +5,10 @@ from collections import deque
 
 from PySide6.QtCore import QObject, QThreadPool
 
-from controller.mp_AD2Capture.AD2StateMPSetter import AD2State
-from controller.mp_AD2Capture.MPDeviceControl import mp_capture
-from model.AD2CaptDeviceModel import AD2CaptDeviceModel, AD2CaptDeviceSignals
-from model.AD2Constants import AD2Constants
+from CaptDeviceControl.controller.mp_AD2Capture.AD2StateMPSetter import AD2State
+from CaptDeviceControl.controller.mp_AD2Capture.MPDeviceControl import mp_capture
+from CaptDeviceControl.model.AD2CaptDeviceModel import AD2CaptDeviceModel, AD2CaptDeviceSignals
+from CaptDeviceControl.model.AD2Constants import AD2Constants
 from multiprocessing import Process, Queue, Value, Lock
 
 

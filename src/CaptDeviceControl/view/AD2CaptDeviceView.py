@@ -10,13 +10,13 @@ from pyqtgraph.dockarea import DockArea, Dock
 
 import pyqtgraph as pg
 
-from controller.AD2CaptDeviceController import AD2CaptDeviceController
-from model.AD2CaptDeviceModel import AD2CaptDeviceModel
-from model.AD2Constants import AD2Constants
-from view.Ui_AD2ControlWindow import Ui_AD2ControlWindow
-from view.widget.WidgetCapturingInformation import WidgetCapturingInformation, WidgetDeviceInformation
+from CaptDeviceControl.controller.AD2CaptDeviceController import AD2CaptDeviceController
+from CaptDeviceControl.model.AD2CaptDeviceModel import AD2CaptDeviceModel
+from CaptDeviceControl.model.AD2Constants import AD2Constants
+from CaptDeviceControl.view.Ui_AD2ControlWindow import Ui_AD2ControlWindow
+from CaptDeviceControl.view.widget.WidgetCapturingInformation import WidgetCapturingInformation, WidgetDeviceInformation
 
-from constants.dwfconstants import DwfStateReady, DwfStateConfig, DwfStatePrefill, DwfStateArmed, DwfStateWait, \
+from CaptDeviceControl.constants.dwfconstants import DwfStateReady, DwfStateConfig, DwfStatePrefill, DwfStateArmed, DwfStateWait, \
     DwfStateTriggered, DwfStateRunning, DwfStateDone
 from fswidgets import PlayPushButton
 

@@ -4,8 +4,8 @@ from datetime import datetime
 import scipy
 from PySide6.QtCore import Slot
 
-from controller.BaseAD2CaptDevice import BaseAD2CaptDevice
-from model.AD2CaptDeviceModel import AD2CaptDeviceModel
+from CaptDeviceControl.controller.BaseAD2CaptDevice import BaseAD2CaptDevice
+from CaptDeviceControl.model.AD2CaptDeviceModel import AD2CaptDeviceModel
 
 
 class AD2CaptDeviceSimulator(BaseAD2CaptDevice):

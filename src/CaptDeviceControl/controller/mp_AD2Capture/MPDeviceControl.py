@@ -11,9 +11,9 @@ import sys
 import time
 from ctypes import c_int, byref, c_double, cdll, create_string_buffer, c_int32
 
-from controller.mp_AD2Capture.AD2StateMPSetter import AD2StateMPSetter
-from model.AD2Constants import AD2Constants
-from constants.dwfconstants import acqmodeRecord, DwfStateConfig, DwfStatePrefill, DwfStateArmed, enumfilterType, \
+from CaptDeviceControl.controller.mp_AD2Capture.AD2StateMPSetter import AD2StateMPSetter
+from CaptDeviceControl.model.AD2Constants import AD2Constants
+from CaptDeviceControl.constants.dwfconstants import acqmodeRecord, DwfStateConfig, DwfStatePrefill, DwfStateArmed, enumfilterType, \
     enumfilterUSB, enumfilterDemo
 
 

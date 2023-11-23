@@ -1,6 +1,6 @@
 from ctypes import c_int, c_byte
 
-from model.AD2Constants import AD2Constants
+from CaptDeviceControl.model.AD2Constants import AD2Constants
 
 class AD2State:
     def __init__(self):
