@@ -8,7 +8,7 @@ description = "A UI for controlling the Analog Discovery Series"
 readme = "README.md"
 requires-python = ">=3.7"
 dependencies = [
-    'pyside6', 'rich', 'pyyaml'
+    'pyside6', 'rich', 'pyyaml','matplotlib', 'numpy', 'pandas', 'scipy', 'pyqtgraph'
 ]
 classifiers = [
     "Programming Language :: Python :: 3",

@@ -102,8 +102,8 @@ def mp_capture(stream_data_queue, capture_data_queue, state_queue,
     cSamples = 0
     ad2_state.device_ready = True
     capture_samples = 0
-
-    while end_process.value == False:
+    print(end_process.value)
+    while end_process.value == int(False):
         # Checks the state of the acquisition. To read the data from the device, set fReadData to TRUE. For
         # single acquisition mode, the data will be read only when the acquisition is finished
         dwf.FDwfAnalogInStatus(hdwf, c_int(1),
@@ -141,7 +141,7 @@ def mp_capture(stream_data_queue, capture_data_queue, state_queue,
             # Print how many samples are available
             status = {"available": cAvailable.value, 'captured': 0, 'lost': cLost.value,
                       'corrupted': cCorrupted.value, "time": time.time()}
-            print(status)
+            #print(status)
             time.sleep(random.random())
             #print(len(rgdSamples))
             stream_data_queue.put(

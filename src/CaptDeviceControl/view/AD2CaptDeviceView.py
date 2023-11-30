@@ -32,7 +32,7 @@ class ControlWindow(QMainWindow):
 
         self._ui = Ui_AD2ControlWindow()
         self._ui.setupUi(self)
-        self._ui.btn_start_capture = PlayPushButton(self._ui.btn_start_capture)
+       # self._ui.btn_start_capture = PlayPushButton(self._ui.btn_start_capture)
 
         #
 
@@ -101,7 +101,7 @@ class ControlWindow(QMainWindow):
         # Device information
         self.model.signals.connected_changed.connect(self._on_connected_changed)
         self.model.signals.device_name_changed.connect(self._on_device_name_changed)
-        self.model.signals.serial_number_changed.connect(self._on_device_serial_number_changed)
+        self.model.signals.device_serial_number_changed.connect(self._on_device_serial_number_changed)
         self.model.signals.device_index_changed.connect(self._on_device_index_changed)
 
         # Acquisition Settings
@@ -179,9 +179,12 @@ class ControlWindow(QMainWindow):
     # Slots for Model
     # ==================================================================================================================
     def _on_device_selected_changed(self, index):
+        self.model.selected_device = index
+        self.controller.get_analog_in_informatio()
         # First populate the AIn box+
-        m: dict = self.model.connected_devices[index]
-        self.model.ain_channels = list(range(0, int(m['analog_in_channels'])))
+        #m: dict = self.model.connected_devices[index]
+        #self.model.ain_channels = list(range(0, int(m['analog_in_channels'])))
+
 
     def _on_dwf_version_changed(self, dwf_version):
         self.dev_info.dwf_version = dwf_version
@@ -402,13 +405,15 @@ class ControlWindow(QMainWindow):
     #
     # ==================================================================================================================
     def on_btn_connect_to_device_clicked(self):
+        print(self.model.connected)
         if self.model.connected:
             self.controller.close_device()
+            self._ui.btn_connect.setText("Connect")
         else:
             try:
                 self.controller.connect_device(self._ui.cb_device_select.currentIndex())
                 # self.plot_update_timer.setInterval(0.1)
-                self.stream_n = int(self.model.sample_rate / self.stream_samples_frequency)
+                #self.stream_n = int(self.model.sample_rate / self.stream_samples_frequency)
             except Exception as e:
                 #    self.status_bar.setStyleSheet('border: 0; color:  red;')
                 #    self.status_bar.showMessage(f"Error: {e}")

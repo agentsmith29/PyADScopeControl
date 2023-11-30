@@ -26,12 +26,12 @@ if __name__ == "__main__":
         )
 
 
-    setup_logging()
+    #setup_logging()
     app = QApplication()
 
 
     conf = CaptDevice.Config()
-    conf.load("config.yaml")
+    #conf.load("config.yaml")
 
 
     model = CaptDevice.Model(conf)

@@ -19,11 +19,12 @@ class AD2CaptDeviceSignals(QObject):
     # Connected Device Information
     num_of_connected_devices_changed = Signal(int)
     connected_devices_changed = Signal(list)
+    selected_device_changed = Signal(int)
 
     # Device information
     connected_changed = Signal(bool)
     device_name_changed = Signal(str)
-    serial_number_changed = Signal(str)
+    device_serial_number_changed = Signal(str)
     device_index_changed = Signal(int)
 
     # Acquisition Settings
@@ -111,7 +112,8 @@ class AD2CaptDeviceModel:
 
         # Connected Device Information
         self._num_of_connected_devices: int = 0
-        self._connected_devices: dict = {}
+        self._connected_devices: list = []
+        self._selected_device: int = 0
 
         # Device Information
         self._connected: bool = False
@@ -221,13 +223,22 @@ class AD2CaptDeviceModel:
         self.signals.num_of_connected_devices_changed.emit(self._num_of_connected_devices)
 
     @property
-    def connected_devices(self) -> dict:
+    def connected_devices(self) -> list:
         return self._connected_devices
 
     @connected_devices.setter
-    def connected_devices(self, value: dict):
+    def connected_devices(self, value: list):
         self._connected_devices = value
         self.signals.connected_devices_changed.emit(self.connected_devices)
+
+    @property
+    def selected_device(self) -> int:
+        return self._selected_device
+
+    @selected_device.setter
+    def selected_device(self, value: int):
+        self._selected_device = value
+        self.signals.selected_device_changed.emit(self.selected_device)
 
 
     # ==================================================================================================================
@@ -264,7 +275,7 @@ class AD2CaptDeviceModel:
             self._device_serial_number = str(value.value.decode('UTF-8'))
         else:
             self._device_serial_number = str(value)
-        self.signals.serial_number_changed.emit(self.device_serial_number)
+        self.signals.device_serial_number_changed.emit(self.device_serial_number)
 
     @property
     def device_index(self) -> int:
@@ -276,7 +287,7 @@ class AD2CaptDeviceModel:
             self._device_index = int(value.value)
         else:
             self._device_index = int(value)
-        self.signals.serial_number_changed.emit(self.device_index)
+        self.signals.device_serial_number_changed.emit(self.device_index)
 
 
     # ==================================================================================================================

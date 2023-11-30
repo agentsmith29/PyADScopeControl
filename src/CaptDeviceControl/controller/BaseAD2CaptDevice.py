@@ -11,6 +11,8 @@ from CaptDeviceControl.model.AD2CaptDeviceModel import AD2CaptDeviceModel, AD2Ca
 from CaptDeviceControl.model.AD2Constants import AD2Constants
 from multiprocessing import Process, Queue, Value, Lock
 
+from CaptDeviceControl.controller.mp_AD2Capture.MPCaptDeviceControl import MPCaptDeviceControl
+
 
 class BaseAD2CaptDevice(QObject):
 
@@ -44,12 +46,31 @@ class BaseAD2CaptDevice(QObject):
         self.status_dqueue = deque(maxlen=int(1))
         self.unconsumed_capture_data = 0
 
+        self.mpcaptdevicecontrol = MPCaptDeviceControl(self.model,
+                                                       self.stream_data_queue,
+                                                       self.capture_data_queue,
+                                                       self.start_capture_flag,
+                                                       enable_logging=True)
 
-        self.discover_connected_devices()
+        #self.mpcaptdevicecontrol.discover_connected_devices_finished.connect(
+        #    lambda x: type(self.model).connected_devices.fset(self.model, x))
 
-    @abstractmethod
+
+        self.mpcaptdevicecontrol.connected_devices()
+
+    def get_analog_in_informatio(self):
+        self.mpcaptdevicecontrol.ain_channels(self.model.selected_device)
+
     def connect_device(self, device_id):
-        raise NotImplementedError
+        self.mpcaptdevicecontrol.open_device(device_id)
+        self.mpcaptdevicecontrol.start_capture(
+            self.model.sample_rate,
+            self.model.selected_ain_channel)
+        self.start_device_process()
+        return True
+
+    def close_device(self):
+        self.mpcaptdevicecontrol.close_device()
 
     @abstractmethod
     def discover_connected_devices(self):
@@ -61,10 +82,6 @@ class BaseAD2CaptDevice(QObject):
 
     @abstractmethod
     def _capture(self):
-        raise NotImplementedError
-
-    @abstractmethod
-    def close_device(self):
         raise NotImplementedError
 
     def set_ad2_acq_status(self, record):
@@ -137,24 +154,24 @@ class BaseAD2CaptDevice(QObject):
         self.model.capturing_finished = False
 
     # ==================================================================================================================
-    def start_device_process(self, device_id):
+    def start_device_process(self):
         self.logger.info(f"[{self.pref} Task] Starting capturing process...")
         #self.logger.debug(f"Dataqueue maxlen={int(self.model.duration_streaming_history * self.model.sample_rate)}")
         self.streaming_data_dqueue = deque(maxlen=int(self.model.duration_streaming_history * self.model.sample_rate))
         #print(self.model.duration_streaming_history * self.model.sample_rate)
         self.stream_data_queue.maxsize = int(self.model.duration_streaming_history * self.model.sample_rate)
-        self.proc = Process(target=mp_capture,
-                       args=(
-                           self.stream_data_queue, self.capture_data_queue, self.state_queue,
-                           self.start_capture_flag, self.end_process_flag,
-                           device_id, self.model.selected_ain_channel, self.model.sample_rate)
-                       )
-        self.proc.start()
+        #self.proc = Process(target=mp_capture,
+        #               args=(
+        #                   self.stream_data_queue, self.capture_data_queue, self.state_queue,
+        #                   self.start_capture_flag, self.end_process_flag,
+        #                   device_id, self.model.selected_ain_channel, self.model.sample_rate)
+        #               )
+        #self.proc.start()
 
         # self.thread_manager.moveToThread(())
-        self.thread_manager.start(self.qt_consume_data)
+        #self.thread_manager.start(self.qt_consume_data)
         self.thread_manager.start(self.qt_stream_data)
-        self.thread_manager.start(self.qt_get_state)
+        #self.thread_manager.start(self.qt_get_state)
     
     def qt_consume_data(self):
         """Consume data from the queue and plot it. This is a QThread."""
@@ -172,8 +189,9 @@ class BaseAD2CaptDevice(QObject):
         nth_cnt = 1
         nth = 2
         while not self.kill_thread and not bool(self.end_process_flag.value):
-            while self.stream_data_queue.qsize() > 0:
-                self.model.unconsumed_stream_samples = self.stream_data_queue.qsize()
+            while True:
+                #self.stream_data_queue.qsize() > 0:
+                #self.model.unconsumed_stream_samples = self.stream_data_queue.qsize()
                 for d in self.stream_data_queue.get()[0]:
                     #if nth_cnt == nth:
                     self.streaming_data_dqueue.append(d)
