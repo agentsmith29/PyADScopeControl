@@ -11,6 +11,9 @@ from rich.logging import RichHandler
 import CaptDeviceControl as CaptDevice
 
 
+
+#logging.disable(logging.INFO)
+
 if __name__ == "__main__":
 
     def setup_logging():
@@ -35,7 +38,7 @@ if __name__ == "__main__":
 
 
     model = CaptDevice.Model(conf)
-    controller = CaptDevice.Controller(model)
+    controller = CaptDevice.Controller(model, None)
     window = CaptDevice.View(model, controller)
 
     window.show()

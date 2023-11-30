@@ -6,6 +6,6 @@ Package Version:
 """
 import sys
 from .CaptDeviceConfig import CaptDeviceConfig as Config
-from .controller.AD2CaptDeviceController import AD2CaptDeviceController as Controller
+from .controller.BaseAD2CaptDevice import BaseAD2CaptDevice as Controller
 from .model.AD2CaptDeviceModel import AD2CaptDeviceModel as Model
 from .view.AD2CaptDeviceView import ControlWindow as View

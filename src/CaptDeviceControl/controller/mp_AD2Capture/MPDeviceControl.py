@@ -9,7 +9,7 @@ import os
 import random
 import sys
 import time
-from ctypes import c_int, byref, c_double, cdll, create_string_buffer, c_int32
+from ctypes import c_int, byref, c_double, cdll, create_string_buffer, c_int32, CDLL
 
 from CaptDeviceControl.controller.mp_AD2Capture.AD2StateMPSetter import AD2StateMPSetter
 from CaptDeviceControl.model.AD2Constants import AD2Constants
@@ -54,25 +54,20 @@ def mp_capture(stream_data_queue, capture_data_queue, state_queue,
     :param channel: Channel to capture data from.
     :return: None
     """
-    # Streaming the data should only be set to 1000Hz, otherwise the UI will freeze. The capturing however should
-    # stay at the given sample rate.
-    # Using the modulo operation allow us to determine the variable stream_n that is required
-    # to scale down the streaming rate.
-    stream_rate = 1000  # Hz
-    #stream_n = sample_rate / stream_rate
-    #stream_sample_cnt = 0
 
     time_capture_started = 0
     capturing_notified = False
-    # Print pid and ppid
-    _mp_log_info(f"Starting capture thread, pid={os.getpid()}, ppid={os.getppid()}")
-    ad2_state = AD2StateMPSetter(state_queue)
 
+    ad2_state = AD2StateMPSetter(state_queue)
     ad2_state.pid = os.getpid()
+    ad2_state.ppid = os.getppid()
+    # Print pid and ppid
+    _mp_log_info(f"Starting capture thread, pid={ad2_state.pid}, ppid={ad2_state.ppid}")
 
     ad2_state.selected_ain_channel = channel
     ad2_state.sample_rate = sample_rate
-    _mp_log_debug(f"Setting up device {device_id} with "
+    ad2_state.device_index = device_id
+    _mp_log_debug(f"Setting up device {ad2_state.device_index} with "
                   f"channel {ad2_state.selected_ain_channel} and "
                   f"acquisition rate {ad2_state.sample_rate} Hz")
 
@@ -250,25 +245,12 @@ def _t_setup_aquisition(dwf, hdwf, ad2_state: AD2StateMPSetter):
 
 def _mp_discover_connected_devices(dwf):
     _mp_log_info(f"Discovering connected devices...")
-    # enumerate connected devices
-    connected_devices = []
-    # for filter_type in [(c_int32(enumfilterType.value | enumfilterUSB.value), 'USB'),
-    #                     (c_int32(enumfilterType.value | enumfilterNetwork.value), 'Network'),
-    #                     (c_int32(enumfilterType.value | enumfilterAXI.value), 'AXI'),
-    #                     (c_int32(enumfilterType.value | enumfilterRemote.value), 'Remote'),
-    #                     (c_int32(enumfilterType.value | enumfilterAudio.value), 'Audio'),
-    #                     (c_int32(enumfilterType.value | enumfilterDemo.value), 'Demo')]:
-    cDevice = c_int()
-    filter, type = (c_int32(enumfilterType.value | enumfilterDemo.value| enumfilterUSB.value), 'USB')
-    # filter, type = (c_int32(enumfilterType.value | enumfilterDemo.value), 'DEMO')
-    _mp_log_debug(f"Filtering {type} devices...")
-    dwf.FDwfEnum(filter, byref(cDevice))
-    num_of_connected_devices = cDevice
+    num_of_connected_devices = 0
 
     devicename = create_string_buffer(64)
     serialnum = create_string_buffer(16)
 
-    for iDevice in range(0, cDevice.value):
+    for iDevice in enumerate_devices(dwf, show_demo_devices=True):
         dwf.FDwfEnumDeviceName(c_int(iDevice), devicename)
         dwf.FDwfEnumSN(c_int(iDevice), serialnum)
         connected_devices.append({
@@ -282,8 +264,25 @@ def _mp_discover_connected_devices(dwf):
     # print(f"Discoverd {len(self.model.connected_devices)} devices.")
     return connected_devices
 
+def enumerate_devices(dwf: CDLL, show_demo_devices=False) -> list:
+    """
+    Enumerates all connected devices. Function is used to discover all connected, compatible devices.
+    Builds an internal list of detected devices filtered by the enumfilter parameter. It must be called
+    before using other FDwfEnum functions because they obtain information about enumerated devices
+    from this list identified by the device index.
+    :param show_demo_devices: Specify if demo devices should be shown.
+    :return: A list from 0 to n devices.
+    """
+    if show_demo_devices:
+        enum_filter = c_int32(enumfilterType.value | enumfilterUSB.value | enumfilterDemo.value)
+    else:
+        enum_filter = c_int32(enumfilterType.value | enumfilterUSB.value)
 
-def _mp_open_device(device_index, ad2_state: AD2StateMPSetter):
+    cDevice = c_int()
+    dwf.FDwfEnum(enum_filter, byref(cDevice))
+    return list(range(0, cDevice.value))
+
+def _mp_open_device(ad2_state: AD2StateMPSetter):
     """
     Opens the device and returns the handle.
     :return: Device handle.
@@ -303,14 +302,14 @@ def _mp_open_device(device_index, ad2_state: AD2StateMPSetter):
 
     # Opens the device specified by idxDevice. The device handle is returned in hdwf. If idxDevice is -1, the
     # first available device is opened.
-    _mp_log_info(f"[Task] Opening device #{device_index}...")
-    dwf.FDwfDeviceOpen(c_int(device_index), byref(hdwf))
+    _mp_log_info(f"[Task] Opening device #{ad2_state.device_index}...")
+    dwf.FDwfDeviceOpen(c_int(ad2_state.device_index), byref(hdwf))
 
     devicename = create_string_buffer(64)
     serialnum = create_string_buffer(16)
 
-    dwf.FDwfEnumDeviceName(c_int(device_index), devicename)
-    dwf.FDwfEnumSN(c_int(device_index), serialnum)
+    dwf.FDwfEnumDeviceName(c_int(ad2_state.device_index), devicename)
+    dwf.FDwfEnumSN(c_int(ad2_state.device_index), serialnum)
 
     ad2_state.device_name = str(devicename.value.decode("utf-8"))
     ad2_state.device_serial_number = str(serialnum.value.decode("utf-8")).replace("SN:", "")

@@ -11,7 +11,7 @@ class CaptDeviceConfig(cfg.ConfigNode):
 
     def __init__(self) -> None:
         super().__init__()
-        self.sample_rate = cfg.Field(50000, friendly_name="Sample rate",
+        self.sample_rate = cfg.Field(500, friendly_name="Sample rate",
                                      description="Sample rate of the device")
         self.streaming_rate = cfg.Field(500, friendly_name="Streaming rate",
                                      description="Streaming rate in Hz (should be below 1kHz)")

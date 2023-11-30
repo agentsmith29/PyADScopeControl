@@ -1,4 +1,5 @@
 import logging
+import os
 from collections import deque
 
 import numpy as np
@@ -9,8 +10,9 @@ from PySide6.QtWidgets import QMainWindow, QStatusBar
 from pyqtgraph.dockarea import DockArea, Dock
 
 import pyqtgraph as pg
+from rich.logging import RichHandler
 
-from CaptDeviceControl.controller.AD2CaptDeviceController import AD2CaptDeviceController
+from CaptDeviceControl.controller.BaseAD2CaptDevice import BaseAD2CaptDevice
 from CaptDeviceControl.model.AD2CaptDeviceModel import AD2CaptDeviceModel
 from CaptDeviceControl.model.AD2Constants import AD2Constants
 from CaptDeviceControl.view.Ui_AD2ControlWindow import Ui_AD2ControlWindow
@@ -23,9 +25,14 @@ from fswidgets import PlayPushButton
 
 class ControlWindow(QMainWindow):
 
-    def __init__(self, model: AD2CaptDeviceModel, controller: AD2CaptDeviceController):
+    def __init__(self, model: AD2CaptDeviceModel, controller: BaseAD2CaptDevice):
         super().__init__()
-        self.logger = logging.getLogger("AD2ControlWindow")
+        self.handler = RichHandler(rich_tracebacks=True)
+        self.logger = logging.getLogger(f"AD2Window({os.getpid()})")
+        self.logger.handlers = [self.handler]
+        self.logger.setLevel(logging.DEBUG)
+        formatter = logging.Formatter('%(name)s %(message)s')
+        self.handler.setFormatter(formatter)
 
         self.controller = controller
         self.model = model
@@ -51,10 +58,10 @@ class ControlWindow(QMainWindow):
         # Timer for periodically updating the plot
         self.capture_update_timer = QTimer()
         self.capture_update_timer.setInterval(10)
-        self.capture_update_timer.timeout.connect(self._on_capture_update_plot)
+        #self.capture_update_timer.timeout.connect(self._on_capture_update_plot)
 
         self.stream_update_timer = QTimer()
-        self.stream_update_timer.setInterval(10)
+        self.stream_update_timer.setInterval(40)
         self.stream_update_timer.timeout.connect(self._on_stream_update_timer_timeout)
 
         self.stream_samples_frequency = 1000
@@ -95,33 +102,33 @@ class ControlWindow(QMainWindow):
         self.model.signals.dwf_version_changed.connect(self._on_dwf_version_changed)
 
         # Connected Device Information
-        self.model.signals.num_of_connected_devices_changed.connect(self._on_num_of_connected_devices_changed)
-        self.model.signals.connected_devices_changed.connect(self._on_connected_devices_changed)
+        self.model.device_information.signals.num_of_connected_devices_changed.connect(self._on_num_of_connected_devices_changed)
+        self.model.device_information.signals.connected_devices_changed.connect(self._on_connected_devices_changed)
 
         # Device information
-        self.model.signals.connected_changed.connect(self._on_connected_changed)
-        self.model.signals.device_name_changed.connect(self._on_device_name_changed)
-        self.model.signals.device_serial_number_changed.connect(self._on_device_serial_number_changed)
-        self.model.signals.device_index_changed.connect(self._on_device_index_changed)
+        self.model.device_information.signals.device_connected_changed.connect(self._on_connected_changed)
+        self.model.device_information.signals.device_name_changed.connect(self._on_device_name_changed)
+        self.model.device_information.signals.device_serial_number_changed.connect(self._on_device_serial_number_changed)
+        self.model.device_information.signals.device_index_changed.connect(self._on_device_index_changed)
 
         # Acquisition Settings
         self.model.signals.sample_rate_changed.connect(self._model_on_sample_rate_changed)
-        self.model.signals.selected_ain_channel_changed.connect(self._model_on_selected_ain_changed)
 
         # Analog In Information
-        self.model.signals.ain_channels_changed.connect(self._on_ain_channels_changed)
-        self.model.signals.ain_buffer_size_changed.connect(self._on_ain_buffer_size_changed)
-        self.model.signals.ain_bits_changed.connect(self._on_ain_bits_changed)
-        self.model.signals.ain_device_state_changed.connect(self._on_ain_device_state_changed)
+        self.model.analog_in.signals.selected_ain_channel_changed.connect(self._model_on_selected_ain_changed)
+        self.model.analog_in.signals.ain_channels_changed.connect(self._on_ain_channels_changed)
+        self.model.analog_in.signals.ain_buffer_size_changed.connect(self._on_ain_buffer_size_changed)
+        self.model.analog_in.signals.ain_bits_changed.connect(self._on_ain_bits_changed)
+        self.model.analog_in.signals.ain_device_state_changed.connect(self._on_ain_device_state_changed)
 
 
         # Analog Out Information
         self.model.signals.aout_channels_changed.connect(self._on_aout_channels_changed)
 
         # Acquired Signal Information
-        self.model.signals.recorded_samples_changed.connect(self._on_recorded_samples_changed)
-        self.model.signals.recording_time_changed.connect(self._on_recording_time_changed)
-        self.model.signals.samples_captured_changed.connect(self._on_samples_captured_changed)
+        #self.model.signals.recorded_samples_changed.connect(self._on_recorded_samples_changed)
+        #self.model.signals.recording_time_changed.connect(self._on_recording_time_changed)
+        #self.model.signals.samples_captured_changed.connect(self._on_samples_captured_changed)
         self.model.signals.samples_lost_changed.connect(self._on_samples_lost_changed)
         self.model.signals.samples_corrupted_changed.connect(self._on_samples_corrupted_changed)
 
@@ -179,8 +186,8 @@ class ControlWindow(QMainWindow):
     # Slots for Model
     # ==================================================================================================================
     def _on_device_selected_changed(self, index):
-        self.model.selected_device = index
-        self.controller.get_analog_in_informatio()
+        self.model.device_information.device_index = index
+        self.controller.device_selected_index_changed()
         # First populate the AIn box+
         #m: dict = self.model.connected_devices[index]
         #self.model.ain_channels = list(range(0, int(m['analog_in_channels'])))
@@ -201,6 +208,7 @@ class ControlWindow(QMainWindow):
             dev: dict
             #  'type': type, 'device_id', 'device_name', 'serial_number'
             self._ui.cb_device_select.addItem(f"{it}: {dev['type']}{dev['device_id']} - {dev['device_name']}")
+        self._ui.cb_device_select.setCurrentIndex(0)
 
     # ============== Device information
     def _on_connected_changed(self, connected):
@@ -396,7 +404,7 @@ class ControlWindow(QMainWindow):
         self.scope_original.clear()
         # print(self.ad2device.recorded_samples)
         self.scope_original.plot(
-            list(self.controller.streaming_data_dqueue),#[::self.stream_n],
+            np.array(self.controller.streaming_data_dqueue)[::100],
             pen=pg.mkPen(width=1))
         self._ui.lcd_unconsumed_stream.display(self.model.unconsumed_stream_samples)
 
@@ -405,8 +413,8 @@ class ControlWindow(QMainWindow):
     #
     # ==================================================================================================================
     def on_btn_connect_to_device_clicked(self):
-        print(self.model.connected)
-        if self.model.connected:
+        print(self.model.device_information.device_connected)
+        if self.model.device_information.device_connected:
             self.controller.close_device()
             self._ui.btn_connect.setText("Connect")
         else:

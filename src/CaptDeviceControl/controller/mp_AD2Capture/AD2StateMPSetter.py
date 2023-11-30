@@ -6,6 +6,7 @@ class AD2State:
     def __init__(self):
         # Multiprocessing Information
         self._pid = None
+        self._ppid = None
 
         # WaveForms Runtime (DWF) Information
         self._dwf_version: str = "Unknown"
@@ -31,7 +32,11 @@ class AD2State:
 
         # Acquired Signal Information
         self._acquisition_state: int = AD2Constants.CapturingState.STOPPED()
+
+        self._time_capture_started: float = -1  # The time the capturing has started
+        self._time_capture_ended: float = -1  # The time the capturing has ended
         self._recording_time: float = -1
+
         self._samples_captured: int = 0
         self._samples_lost: int = -1
         self._samples_corrupted: int = -1
@@ -49,6 +54,10 @@ class AD2State:
     @property
     def pid(self):
         return self._pid
+
+    @property
+    def ppid(self):
+        return self._ppid
 
     # =========== WaveForms Runtime (DWF) Information
     @property
@@ -109,6 +118,16 @@ class AD2State:
         return self._acquisition_state
 
     @property
+    def time_capture_started(self) -> float:
+        """The time the capturing has started"""
+        return self._time_capture_started
+
+    @property
+    def time_capture_ended(self) -> float:
+        """The time the capturing has ended"""
+        return self._time_capture_ended
+
+    @property
     def recording_time(self):
         return self._recording_time
 
@@ -144,6 +163,11 @@ class AD2StateMPSetter(AD2State):
     @AD2State.pid.setter
     def pid(self, value):
         self._pid = value
+        self._state_queue.put(self.to_simple_class())
+
+    @AD2State.ppid.setter
+    def ppid(self, value):
+        self._ppid = value
         self._state_queue.put(self.to_simple_class())
 
     # =========== WaveForms Runtime (DWF) Information
@@ -216,6 +240,17 @@ class AD2StateMPSetter(AD2State):
     @AD2State.acquisition_state.setter
     def acquisition_state(self, value):
         self._acquisition_state = value
+        self._state_queue.put(self.to_simple_class())
+
+    @AD2State.time_capture_ended.setter
+    def time_capture_started(self, value: float):
+        """The time the capturing has started"""
+        self._time_capture_started = value
+        self._state_queue.put(self.to_simple_class())
+
+    @AD2State.time_capture_ended.setter
+    def time_capture_ended(self, value: float):
+        self._time_capture_ended = value
         self._state_queue.put(self.to_simple_class())
 
     @AD2State.recording_time.setter

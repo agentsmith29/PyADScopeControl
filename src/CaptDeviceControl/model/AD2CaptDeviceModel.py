@@ -4,11 +4,16 @@ from PySide6.QtCore import QObject, Signal
 
 from CaptDeviceControl.model.AD2Constants import AD2Constants
 from CaptDeviceControl.CaptDeviceConfig import CaptDeviceConfig as Config
-#from MeasurementData.Properties.AD2CaptDeviceProperties import AD2CaptDeviceProperties
+from CaptDeviceControl.model.AD2CaptDeviceAnalogInModel import AD2CaptDeviceAnalogInModel
+from CaptDeviceControl.model.AD2CaptDeviceInformationModel import AD2CaptDeviceInformationSignals, \
+    AD2CaptDeviceInformationModel
+
+
+# from MeasurementData.Properties.AD2CaptDeviceProperties import AD2CaptDeviceProperties
 
 
 class AD2CaptDeviceSignals(QObject):
-    def __init__(self, parent = None):
+    def __init__(self, parent=None):
         super().__init__(parent)
 
     ad2captdev_config_changed = Signal(Config)
@@ -16,29 +21,11 @@ class AD2CaptDeviceSignals(QObject):
     # WaveForms Runtime (DWF) Information
     dwf_version_changed = Signal(str)
 
-    # Connected Device Information
-    num_of_connected_devices_changed = Signal(int)
-    connected_devices_changed = Signal(list)
-    selected_device_changed = Signal(int)
-
-    # Device information
-    connected_changed = Signal(bool)
-    device_name_changed = Signal(str)
-    device_serial_number_changed = Signal(str)
-    device_index_changed = Signal(int)
-
     # Acquisition Settings
     sample_rate_changed = Signal(int)
     streaming_rate_changed = Signal(int)
-    selected_ain_channel_changed = Signal(int)
+
     duration_streaming_history_changed = Signal(int)
-
-    # Analog In Information
-    ain_channels_changed = Signal(list)
-    ain_buffer_size_changed = Signal(int)
-    ain_bits_changed = Signal(int)
-    ain_device_state_changed = Signal(int)
-
 
     # Analog Out Information
     aout_channels_changed = Signal(list)
@@ -63,16 +50,12 @@ class AD2CaptDeviceSignals(QObject):
     # Multiprocessing Information
     pid_changed = Signal(int)
 
-
     # ==================================================================================================================
     # Delete later
     # Signals for device information
     hwdf_changed = Signal(int)
 
-
     device_ready_changed = Signal(bool)
-
-
 
     # Signals for reporting if samples were lost or corrupted
     fLost_changed = Signal(int)
@@ -83,13 +66,11 @@ class AD2CaptDeviceSignals(QObject):
 
     # Recording settings for starting, stopping and pausing
 
-
     # Signal if new samples have been aquired
 
     all_recorded_samples_changed = Signal(list)
     num_of_current_recorded_samples_changed = Signal(int)
     measurement_time_changed = Signal(float)
-    
 
     ad2_settings = Signal(dict)
     error = Signal(str)
@@ -97,8 +78,6 @@ class AD2CaptDeviceSignals(QObject):
 
     ad2_set_acquisition = Signal(bool)
     ad2_captured_value = Signal(list)
-
-
 
 
 class AD2CaptDeviceModel:
@@ -110,30 +89,14 @@ class AD2CaptDeviceModel:
         # WaveForms Runtime (DWF) Information
         self._dwf_version: str = "Unknown"
 
-        # Connected Device Information
-        self._num_of_connected_devices: int = 0
-        self._connected_devices: list = []
-        self._selected_device: int = 0
-
-        # Device Information
-        self._connected: bool = False
-        self._device_name: str = "Unknown"
-        self._device_serial_number: str = "Unknown"
-        self._device_index: int = -1
+        self.device_information = AD2CaptDeviceInformationModel()
+        self.analog_in = AD2CaptDeviceAnalogInModel(self.ad2captdev_config)
 
         # Acquisition Settings
         self._sample_rate: int = self.ad2captdev_config.sample_rate.value
         self._streaming_rate: int = self.ad2captdev_config.streaming_rate.value
 
-        self._selected_ain_channel: int = 0
         self._duration_streaming_history: float = 0
-
-
-        # Analog In Information
-        self._ain_channels: list = []
-        self._ain_buffer_size: float = -1
-        self._ain_device_state: int = -1
-        self._ain_bits: int = -1
 
         # Analog Out Information
         self.aout_channels: list = []
@@ -149,7 +112,6 @@ class AD2CaptDeviceModel:
         # Actually for the worker, these are the samples that have not been consumed yet by the UI thread.
         self._unconsumed_stream_samples: int = 0
         self._unconsumed_capture_samples: int = 0
-
 
         # Recording Flags (starting, stopping and pausing)
         self._device_capturing_state: AD2Constants.CapturingState = AD2Constants.CapturingState.STOPPED()
@@ -181,8 +143,6 @@ class AD2CaptDeviceModel:
         self._num_of_current_recorded_samples: int = 0
         self._n_samples: int = 0
 
-
-
     @property
     def ad2captdev_config(self) -> Config:
         return self._ad2captdev_config
@@ -208,89 +168,6 @@ class AD2CaptDeviceModel:
         self.signals.dwf_version_changed.emit(self.dwf_version)
 
     # ==================================================================================================================
-    # Connected Device Information
-    # ==================================================================================================================
-    @property
-    def num_of_connected_devices(self) -> int:
-        return self._num_of_connected_devices
-
-    @num_of_connected_devices.setter
-    def num_of_connected_devices(self, value: c_int | int):
-        if isinstance(value, c_int):
-            self._num_of_connected_devices = int(value.value)
-        else:
-            self._num_of_connected_devices = int(value)
-        self.signals.num_of_connected_devices_changed.emit(self._num_of_connected_devices)
-
-    @property
-    def connected_devices(self) -> list:
-        return self._connected_devices
-
-    @connected_devices.setter
-    def connected_devices(self, value: list):
-        self._connected_devices = value
-        self.signals.connected_devices_changed.emit(self.connected_devices)
-
-    @property
-    def selected_device(self) -> int:
-        return self._selected_device
-
-    @selected_device.setter
-    def selected_device(self, value: int):
-        self._selected_device = value
-        self.signals.selected_device_changed.emit(self.selected_device)
-
-
-    # ==================================================================================================================
-    # Device Information
-    # ==================================================================================================================
-    @property
-    def connected(self):
-        return self._connected
-
-    @connected.setter
-    def connected(self, value):
-        self._connected = value
-        self.signals.connected_changed.emit(self._connected)
-
-    @property
-    def device_name(self) -> str:
-        return self._device_name
-
-    @device_name.setter
-    def device_name(self, value: Array | str):
-        if not isinstance(value, str):
-            self._device_name = str(value.value.decode('UTF-8'))
-        else:
-            self._device_name = str(value)
-        self.signals.device_name_changed.emit(self.device_name)
-
-    @property
-    def device_serial_number(self) -> str:
-        return self._device_serial_number
-
-    @device_serial_number.setter
-    def device_serial_number(self, value: Array | str):
-        if not isinstance(value, str):
-            self._device_serial_number = str(value.value.decode('UTF-8'))
-        else:
-            self._device_serial_number = str(value)
-        self.signals.device_serial_number_changed.emit(self.device_serial_number)
-
-    @property
-    def device_index(self) -> int:
-        return self._device_index
-
-    @device_index.setter
-    def device_index(self, value: c_int | int):
-        if isinstance(value, c_int):
-            self._device_index = int(value.value)
-        else:
-            self._device_index = int(value)
-        self.signals.device_serial_number_changed.emit(self.device_index)
-
-
-    # ==================================================================================================================
     # Acquisition Settings
     # ==================================================================================================================
     @property
@@ -314,19 +191,6 @@ class AD2CaptDeviceModel:
         self.signals.streaming_rate_changed.emit(self._streaming_rate)
 
     @property
-    def selected_ain_channel(self) -> int:
-        return self._selected_ain_channel
-
-    @selected_ain_channel.setter
-    def selected_ain_channel(self, value: int | c_int):
-        if isinstance(value, c_int):
-            self._selected_ain_channel = int(value.value)
-        else:
-            self._selected_ain_channel = int(value)
-        self.ad2captdev_config.ain_channel.set(self._selected_ain_channel)
-        self.signals.selected_ain_channel_changed.emit(self.selected_ain_channel)
-
-    @property
     def duration_streaming_history(self) -> float:
         return self._duration_streaming_history
 
@@ -334,48 +198,6 @@ class AD2CaptDeviceModel:
     def duration_streaming_history(self, value: float):
         self._duration_streaming_history = value
         self.signals.duration_streaming_history_changed.emit(self.duration_streaming_history)
-
-    # ==================================================================================================================
-    # Analog In Information
-    # ==================================================================================================================
-    @property
-    def ain_channels(self) -> list:
-        return self._ain_channels
-
-    @ain_channels.setter
-    def ain_channels(self, value: list):
-        self._ain_channels = value
-        self.signals.ain_channels_changed.emit(self.ain_channels)
-
-    @property
-    def ain_buffer_size(self) -> float:
-        return self._ain_buffer_size
-
-    @ain_buffer_size.setter
-    def ain_buffer_size(self, value: float):
-        self._ain_buffer_size = value
-        self.signals.ain_buffer_size_changed.emit(self.ain_buffer_size)
-
-    @property
-    def ain_bits(self) -> int:
-        return self._ain_bits
-
-    @ain_bits.setter
-    def ain_bits(self, value: int):
-        self._ain_bits = value
-        self.signals.ain_bits_changed.emit(self.ain_bits)
-
-    @property
-    def ain_device_state(self) -> int:
-        return self._ain_device_state
-
-    @ain_device_state.setter
-    def ain_device_state(self, value: c_int | int | c_byte):
-        if isinstance(value, c_int) or isinstance(value, c_byte):
-            self._ain_device_state = int(value.value)
-        else:
-            self._ain_device_state = int(value)
-        self.signals.ain_device_state_changed.emit(self.ain_device_state)
 
     # ==================================================================================================================
     # Analog Out Information
@@ -389,7 +211,6 @@ class AD2CaptDeviceModel:
         self._aout_channels = value
         self.signals.aout_channels_changed.emit(self.aout_channels)
 
-
     # ==================================================================================================================
     # Acquired Signal Information
     # ==================================================================================================================
@@ -401,7 +222,7 @@ class AD2CaptDeviceModel:
     def recorded_samples(self, value: list):
         self._recorded_samples = value
         self.samples_captured = len(self._recorded_samples)
-        #self.signals.num_of_current_recorded_samples_changed.emit(self.num_of_current_recorded_samples)
+        # self.signals.num_of_current_recorded_samples_changed.emit(self.num_of_current_recorded_samples)
         self.signals.recorded_samples_changed.emit(self.recorded_samples)
 
     @property
@@ -440,17 +261,15 @@ class AD2CaptDeviceModel:
         self._samples_corrupted = value
         self.signals.samples_corrupted_changed.emit(self.samples_corrupted)
 
-
     @property
     def capturing_finished(self) -> bool:
         return self._capturing_finished
-    
+
     @capturing_finished.setter
     def capturing_finished(self, value: bool):
         self._capturing_finished = value
-        print(f"Set _capturing_finished to { self._capturing_finished}")
+        print(f"Set _capturing_finished to {self._capturing_finished}")
         self.signals.capturing_finished_changed.emit(self._capturing_finished)
-        
 
     # ==================================================================================================================
     # Recording Flags (starting, stopping and pausing)
@@ -491,7 +310,6 @@ class AD2CaptDeviceModel:
         self._reset_recording = value
         self.signals.reset_recording_changed.emit(self._reset_recording)
 
-
     # ==================================================================================================================
     # Multiprocessing Flags
     # ==================================================================================================================
@@ -522,8 +340,6 @@ class AD2CaptDeviceModel:
         self._unconsumed_capture_samples = value
         self.signals.unconsumed_capture_samples_changed.emit(self.unconsumed_capture_samples)
 
-
-
     # ==================================================================================================================
     # ==================================================================================================================
     # DELETE LATER
@@ -538,7 +354,7 @@ class AD2CaptDeviceModel:
         self._auto_connect = value
 
     @property
-    #def ad2_properties(self) -> AD2CaptDeviceProperties:
+    # def ad2_properties(self) -> AD2CaptDeviceProperties:
     #    return AD2CaptDeviceProperties(self._fLost, self._fCorrupted,
     #                                   self._sample_rate, self._n_samples,
     #                                   self._measurement_time)
@@ -593,7 +409,6 @@ class AD2CaptDeviceModel:
         self._all_recorded_samples = value
         self.signals.all_recorded_samples_changed.emit(self.all_recorded_samples)
 
-
     @property
     def n_samples(self):
         return self._n_samples
@@ -620,5 +435,3 @@ class AD2CaptDeviceModel:
     def fLost(self, value):
         self._fLost = value
         self.signals.fLost_changed.emit(self._fLost)
-
-
