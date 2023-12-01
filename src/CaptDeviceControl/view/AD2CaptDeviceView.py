@@ -481,3 +481,9 @@ class ControlWindow(QMainWindow):
         else:
             item = QStandardItem(str(data))
             parent.appendRow(item)
+
+    def closeEvent(self, args):
+        print("Destroyed")
+        self.controller.exit()
+        self.destroyed.emit()
+        

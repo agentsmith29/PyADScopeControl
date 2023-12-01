@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 import time
 from abc import abstractmethod
 from collections import deque
@@ -8,8 +9,7 @@ from PySide6.QtCore import QObject, QThreadPool
 from numpy import ndarray
 from rich.logging import RichHandler
 
-from CaptDeviceControl.controller.mp_AD2Capture.AD2StateMPSetter import AD2State
-from CaptDeviceControl.controller.mp_AD2Capture.MPDeviceControl import mp_capture
+
 from CaptDeviceControl.model.AD2CaptDeviceModel import AD2CaptDeviceModel, AD2CaptDeviceSignals
 from CaptDeviceControl.model.AD2Constants import AD2Constants
 from multiprocessing import Process, Queue, Value, Lock
@@ -224,56 +224,11 @@ class BaseAD2CaptDevice(QObject):
             #time.sleep(0.1)
         self.logger.info("Status data consume thread ended")
 
-    def _set_ad2state_from_process(self, ad2state: AD2State):
-        # print(ad2state.__dict__)
-        self.model.pid = ad2state.pid
-
-        self.model.dwf_version = ad2state.dwf_version
-
-        self.model.connected = ad2state.connected
-        self.model.device_name = ad2state.device_name
-        self.model.device_serial_number = ad2state.device_serial_number
-        self.model.device_index = ad2state.device_index
-
-        if ad2state.acquisition_state == AD2Constants.CapturingState.RUNNING():
-            self.logger.info("[START ACQ] Started acquisition")
-            self.model.capturing_finished = False
-            self.model.start_recording = True
-            self.model.stop_recording = False
-        elif ad2state.acquisition_state == AD2Constants.CapturingState.STOPPED():
-            if self.model.start_recording:
-                self.model.capturing_finished = True
-                self.logger.info(f"[STOP ACQ] Finished acquisition {self.model.capturing_finished}.")
-                # Emit a signal,  that the Capturing has finished
-            self.model.start_recording = False
-            self.model.stop_recording = True
-        self.model.device_capturing_state = ad2state.acquisition_state
-
-        self.model.sample_rate = ad2state.sample_rate
-        self.model.selected_ain_channel = ad2state.selected_ain_channel
-
-        self.model.ain_channels = ad2state.ain_channels
-        self.model.ain_buffer_size = ad2state.ain_buffer_size
-        self.model.ain_bits = ad2state.ain_bits
-        self.model.ain_device_state = ad2state.ain_device_state
-
-        self.model.recording_time = ad2state.recording_time
-
     # ==================================================================================================================
     # Destructor
     # ==================================================================================================================
-    def stop_process(self):
-        #self.end_process_flag.value = True
+    def exit(self):
+       self.mpcaptdevicecontrol.safe_exit()
 
-        time_start = time.time()
-        #while self.proc.is_alive():
-        #    time.sleep(0.1)
-        self.logger.warning(f"AD2 process exited after {time.time()-time_start}s")
-        self.kill_thread = True
-
-    def __del__(self):
-        self.logger.info("Exiting AD2 controller")
-        self.stop_process()
-        self.logger.warning("AD2 controller exited")
 
         

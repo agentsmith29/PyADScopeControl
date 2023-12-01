@@ -4,8 +4,8 @@ import cmp
 from PySide6.QtCore import Signal
 
 from CaptDeviceControl.controller.mp_AD2Capture.MPCaptDevice import MPCaptDevice
-from model.AD2CaptDeviceModel import AD2CaptDeviceSignals, AD2CaptDeviceModel
-from model.AD2Constants import AD2Constants
+from CaptDeviceControl.model.AD2CaptDeviceModel import AD2CaptDeviceSignals, AD2CaptDeviceModel
+from CaptDeviceControl.model.AD2Constants import AD2Constants
 
 
 class MPCaptDeviceControl(cmp.CProcessControl):
