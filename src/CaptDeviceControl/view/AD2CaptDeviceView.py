@@ -404,7 +404,7 @@ class ControlWindow(QMainWindow):
         self.scope_original.clear()
         # print(self.ad2device.recorded_samples)
         self.scope_original.plot(
-            np.array(self.controller.streaming_data_dqueue)[::100],
+            np.array(self.controller.streaming_data_dqueue),#[::100],
             pen=pg.mkPen(width=1))
         self._ui.lcd_unconsumed_stream.display(self.model.unconsumed_stream_samples)
 

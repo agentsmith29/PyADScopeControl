@@ -1,6 +1,6 @@
 [project]
 name = "captdevicecontrol"
-version = "0.0.1"
+version = "0.1.0"
 authors = [
   { name="Christoph Schmidt", email="cschmidt.fs@gmail.com" },
 ]
@@ -8,7 +8,16 @@ description = "A UI for controlling the Analog Discovery Series"
 readme = "README.md"
 requires-python = ">=3.7"
 dependencies = [
-    'pyside6', 'rich', 'pyyaml','matplotlib', 'numpy', 'pandas', 'scipy', 'pyqtgraph'
+    'matplotlib',
+    'numpy',
+    'pandas',
+    'PySide6',
+    'scipy',
+    'rich',
+    'pyqtgraph',
+    'fswidget@git+https://gitlab.tugraz.at/flexsensor-public/modules/fswidgets.git#egg=develop',
+    'confighandler@git+https://gitlab.tugraz.at/flexsensor-public/modules/confighandler.git#egg=develop',
+    'cmp@git+https://gitlab.tugraz.at/flexsensor-public/modules/cmp.git#egg=develop'
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -17,4 +26,4 @@ classifiers = [
 ]
 
 [project.urls]
-"Homepage" = "https://gitlab.tugraz.at/flexsensor-public/confighandler"
+"Homepage" = "https://gitlab.tugraz.at/flexsensor-public/captdevicecontrol"

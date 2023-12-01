@@ -68,12 +68,8 @@ class MPCaptDevice(cmp.CProcess):
             self.dwf = cdll.LoadLibrary("libdwf.so")
         self._connected = self.connected()
         self.hdwf = c_int()
-        self._ain_device_state: c_byte = c_byte()
 
-        self._c_available = c_int()
-        self._c_lost = c_int()
-        self._c_corrupted = c_int()
-        self._c_samples = 0
+
 
     @cmp.CProcess.register_for_signal('_changed')
     def device_capturing(self, capturing: bool):
@@ -312,21 +308,21 @@ class MPCaptDevice(cmp.CProcess):
     # Function for setting up the acquisition
     # ==================================================================================================================
     def setup_acquisition(self, sample_rate: float, ain_channel: int):
-        self.dwf.FDwfAnalogInStatus(self.hdwf, c_int(1),
-                                    byref(self._ain_device_state))  # Variable to receive the acquisition state
+        #self.dwf.FDwfAnalogInStatus(self.hdwf, c_int(1),
+        #                            byref(self._ain_device_state))  # Variable to receive the acquisition state
         self.logger.info(f"[Task] Setup for acquisition on channel {ain_channel} with rate {sample_rate} Hz.")
         self.dwf.FDwfAnalogInChannelEnableSet(self.hdwf, c_int(ain_channel), c_int(1))
         self.dwf.FDwfAnalogInChannelRangeSet(self.hdwf, c_int(ain_channel), c_double(5))
         self.dwf.FDwfAnalogInAcquisitionModeSet(self.hdwf, acqmodeRecord)
         self.dwf.FDwfAnalogInFrequencySet(self.hdwf, c_double(sample_rate))
-        self.dwf.FDwfAnalogInRecordLengthSet(self.hdwf, 0)  # -1 infinite record length
-
+        self.dwf.FDwfAnalogInRecordLengthSet(self.hdwf, c_double(1))  # -1 infinite record length
+        self.dwf.FDwfAnalogInConfigure(self.hdwf, c_int(1), c_int(0))
         # Variable to receive the acquisition state
         #self.dwf.FDwfAnalogInStatus(self.hdwf, c_int(1), byref(self._ain_device_state))
-        #self.logger.info(f"[Task] Wait 2 seconds for the offset to stabilize.")
+        self.logger.info(f"[Task] Wait 2 seconds for the offset to stabilize.")
         # wait at least 2 seconds for the offset to stabilize
-        #time.sleep(2)
-        #self.logger.info(f"[Task] Setup for acquisition done.")
+        time.sleep(2)
+        self.logger.info(f"[Task] Setup for acquisition done.")
 
     # ==================================================================================================================
     # Python wrapper for WaveForms API Functions
@@ -385,15 +381,52 @@ class MPCaptDevice(cmp.CProcess):
         :param sample_rate:
         :return: None
         """
+        self.close_device()
+
+        if sys.platform.startswith("win"):
+            dwf = cdll.dwf
+        elif sys.platform.startswith("darwin"):
+            dwf = cdll.LoadLibrary("/Library/Frameworks/dwf.framework/dwf")
+        else:
+            dwf = cdll.LoadLibrary("libdwf.so")
+
+        cDevice = c_int()
+        hdwf = c_int()
+        filter, type = (c_int32(enumfilterType.value | enumfilterDemo.value | enumfilterUSB.value), 'USB')
+        dwf.FDwfEnum(filter, byref(cDevice))
+        dwf.FDwfDeviceOpen(c_int(3), byref(hdwf))
+
+        ain_channel = int(0)
+        self.logger.debug("Generating AM sine wave...")
+        dwf.FDwfAnalogOutNodeEnableSet(hdwf, c_int(ain_channel), c_int(0), c_int(1))  # carrier
+        dwf.FDwfAnalogOutNodeFunctionSet(hdwf, c_int(ain_channel), c_int(0), c_int(1))  # sine
+        dwf.FDwfAnalogOutNodeFrequencySet(hdwf, c_int(ain_channel), c_int(0), c_double(1))
+        dwf.FDwfAnalogOutNodeAmplitudeSet(hdwf, c_int(ain_channel), c_int(0), c_double(1))
+        dwf.FDwfAnalogOutConfigure(hdwf, c_int(ain_channel), c_int(1))
+        time.sleep(1)
+        self.logger.debug(f"Sine wave on output channel {ain_channel} configured.")
+
         # FDwfAnalogInStatus(HDWF hdwf, BOOL fReadData, DwfState* psts)
-        self.setup_acquisition(ain_channel=ain_channel, sample_rate=sample_rate)
+        self.logger.info(f"[Task] Setup for acquisition on channel {ain_channel} with rate {sample_rate} Hz.")
+        dwf.FDwfAnalogInChannelEnableSet(hdwf, c_int(ain_channel), c_int(1))
+        dwf.FDwfAnalogInChannelRangeSet(hdwf, c_int(ain_channel), c_double(5))
+        dwf.FDwfAnalogInAcquisitionModeSet(hdwf, acqmodeRecord)
+        dwf.FDwfAnalogInFrequencySet(hdwf, c_double(sample_rate))
+        dwf.FDwfAnalogInRecordLengthSet(hdwf, c_double(9999))  # -1 infinite record length
+
+        # Variable to receive the acquisition state
+        # self.dwf.FDwfAnalogInStatus(self.hdwf, c_int(1), byref(self._ain_device_state))
+        self.logger.info(f"[Task] Wait 2 seconds for the offset to stabilize.")
+        # wait at least 2 seconds for the offset to stabilize
+        time.sleep(2)
+        self.logger.info(f"[Task] Setup for acquisition done.")
 
         # Creates a Sin Wave on the Analog Out Channel 0
-        self.setup_sine_wave(channel=0)
+
         self.logger.info("Configuring acquisition. Starting oscilloscope.")
 
         # Configures the instrument and start or stop the acquisition. To reset the Auto trigger timeout, set
-        self.dwf.FDwfAnalogInConfigure(self.hdwf, c_int(0), c_int(1))
+        self.dwf.FDwfAnalogInConfigure(hdwf, c_int(0), c_int(1))
         self.logger.info("Device configured. Starting acquisition.")
 
         time_capture_started = 0
@@ -401,13 +434,18 @@ class MPCaptDevice(cmp.CProcess):
         capture_started = False
         capture_ended = False
 
-        n_samples = int((sample_rate*2))
-        rgd_samples = (c_double * n_samples)()
-        #num_sent_samples = 0
+
+
+        cAvailable = c_int()
+        cLost = c_int()
+        cCorrupted = c_int()
+        cSamples = 0
+        sts  = c_byte()
+
+
         try:
-            self.dwf.FDwfAnalogOutReset(self.hdwf, c_int(0))
-
-
+            #self.dwf.FDwfAnalogOutReset(self.hdwf, c_int(0))
+            dwf.FDwfAnalogInStatus(hdwf, c_int(1), byref(sts))
             while self.kill_capture_flag.value == int(False):
                 self._c_samples = 0
 
@@ -416,87 +454,79 @@ class MPCaptDevice(cmp.CProcess):
 
                 # Checks the state of the acquisition. To read the data from the device, set fReadData to TRUE. For
                 # single acquisition mode, the data will be read only when the acquisition is finished
-                self.dwf.FDwfAnalogInStatus(self.hdwf, c_int(1), byref(self._ain_device_state))
+
 
                 if self._c_samples == 0 and (
-                        self._ain_device_state == DwfStateConfig or
-                        self._ain_device_state == DwfStatePrefill or
-                        self._ain_device_state == DwfStateArmed):
+                        sts == DwfStateConfig or
+                        sts == DwfStatePrefill or
+                        sts == DwfStateArmed):
                     # self.logger.info("Device in idle state. Waiting for acquisition to start.")
                     continue  # Acquisition not yet started.
 
-                self.dwf.FDwfAnalogInStatusRecord(self.hdwf,
-                                                  byref(self._c_available),
-                                                  byref(self._c_lost), byref(self._c_corrupted)
-                                                  )
-                self._c_samples += self._c_lost.value
-                #if self._c_lost.value:
-                #    self._samples_lost += self._c_lost.value
-                #if self._c_corrupted.value:
-                #    self._samples_corrupted += self._c_corrupted.value
-
+                dwf.FDwfAnalogInStatusRecord(hdwf, byref(cAvailable), byref(cLost), byref(cCorrupted))
                 # self.dwf.FDwfAnalogInStatusSamplesValid(self.hdwf, byref(self.cValid))
-                if self._c_available.value == 0:
-                    pass
+                if cAvailable.value == 0:
                     #print("Nothing available")
-                    #continue
+                    continue
 
-                else:
-                    if self._c_samples + self._c_available.value > n_samples:
-                        self._c_available = c_int(n_samples - self._c_samples)
+                print(f"Available: {cAvailable.value}")
+                # if cSamples + cAvailable.value > self.ad2capt_model.n_samples:
+                #    cAvailable = c_int(self.ad2capt_model.n_samples - cSamples)
+                # time_rgdsamples_start = time.time()
 
-                    # print(f"Available: {self._c_available.value}")
-                    # if cSamples + cAvailable.value > self.ad2capt_model.n_samples:
-                    #    cAvailable = c_int(self.ad2capt_model.n_samples - cSamples)
-                    # time_rgdsamples_start = time.time()
+                # arr = [None] * cAvailable.value
+                # time_rgdsamples_stop = time.time()
+                # time_rgdsamples = time_rgdsamples_stop - time_rgdsamples_start
+                # print(f"rgd_samples took {time_rgdsamples} seconds")
+                rgd_samples = (c_double * cAvailable.value)()
+                # Get the data from the device and store it in rgd_samples
+                dwf.FDwfAnalogInStatusData(hdwf,
+                                                c_int(ain_channel),
+                                                byref(rgd_samples),
+                                                cAvailable)
 
-                    # arr = [None] * cAvailable.value
-                    # time_rgdsamples_stop = time.time()
-                    # time_rgdsamples = time_rgdsamples_stop - time_rgdsamples_start
-                    # print(f"rgd_samples took {time_rgdsamples} seconds")
-                    rgd_samples = (c_double * self._c_available.value)()
-                    # Get the data from the device and store it in rgd_samples
-                    self.dwf.FDwfAnalogInStatusData(self.hdwf,
-                                                    c_int(ain_channel),
-                                                    rgd_samples,
-                                                    self._c_available)
-                    #print(f"Got data from device: {self._c_available.value}")
-                    self._c_samples += self._c_available.value
-                    iteration_time = time.time() - time_start
+                #self._c_samples += self._c_available.value
+                iteration_time = time.time() - time_start
+                print(f"Got data from device: len {cAvailable.value},"
+                      f"time {iteration_time} seconds.")
 
                 # Convert the data to a numpy array and put it into the queue
                 # self.logger.info("Convert data to numpy array and put it into the queue.")
 
                 #    num_sent_samples = 0
-                arr = np.array(rgd_samples)
-                #print(f"I send {len(arr)} samples to the queue.")
-                self.stream_data_queue.put(arr)
+                if len(rgd_samples) > 0:
+                    #arr =
+                    print(f"I send {len(np.array(rgd_samples))} samples to the queue.")
+                    self.stream_data_queue.put(np.array(rgd_samples))
+                    #np.delete(arr
+                else:
+                    print(f"rgd_samples is empty.")
 
-                if self.start_capture_flag.value == int(True):
-                    if not capture_started:
-                        self.device_capturing(True)
-                        time_capture_started = time.time()
-                        self.logger.info(
-                            "**************************** Starting command received. Acquisition started.")
-                        capture_started = True
-                        capture_ended = False
-                        capture_samples = 0
-                    #capture_samples = capture_samples + len(arr)
-                    #self.capture_data_queue.put(arr)
-                elif self.start_capture_flag.value == int(False):
-
-                    if not capture_ended and capture_started:
-                        self.device_capturing(False)
-                        time_capture_stopped = time.time()
-                        time_captured = time_capture_stopped - time_capture_started
-                        self.logger.info(
-                            "**************************** Stopping command received. Acquisition stopped.")
-                        self.logger.info(
-                            f"Acquisition stopped after {time_captured} seconds. Captured {capture_samples} "
-                            f"samples. Resulting in a time of {capture_samples / sample_rate} s.")
-                        capture_ended = True
-                        capture_started = False
-                        #self.capture_data_queue.put(arr)
+                # if self.start_capture_flag.value == int(True):
+                #     if not capture_started:
+                #         self.device_capturing(True)
+                #         time_capture_started = time.time()
+                #         self.logger.info(
+                #             "**************************** Starting command received. Acquisition started.")
+                #         capture_started = True
+                #         capture_ended = False
+                #         capture_samples = 0
+                #     #capture_samples = capture_samples + len(arr)
+                #     #self.capture_data_queue.put(arr)
+                # elif self.start_capture_flag.value == int(False):
+                #
+                #     if not capture_ended and capture_started:
+                #         self.device_capturing(False)
+                #         time_capture_stopped = time.time()
+                #         time_captured = time_capture_stopped - time_capture_started
+                #         self.logger.info(
+                #             "**************************** Stopping command received. Acquisition stopped.")
+                #         self.logger.info(
+                #             f"Acquisition stopped after {time_captured} seconds. Captured {capture_samples} "
+                #             f"samples. Resulting in a time of {capture_samples / sample_rate} s.")
+                #         capture_ended = True
+                #         capture_started = False
+                #         #self.capture_data_queue.put(arr)
                 # self._c_samples += self._c_available.value
 
 
@@ -512,10 +542,10 @@ class MPCaptDevice(cmp.CProcess):
     # ==================================================================================================================
     def setup_sine_wave(self, channel: int = 0):
         self.logger.debug("Generating AM sine wave...")
-        self.dwf.FDwfAnalogOutNodeEnableSet(self.hdwf, c_int(0), c_int(0), c_int(1))  # carrier
-        self.dwf.FDwfAnalogOutNodeFunctionSet(self.hdwf, c_int(0), c_int(0), c_int(1))  # sine
-        self.dwf.FDwfAnalogOutNodeFrequencySet(self.hdwf, c_int(0), c_int(0), c_double(0.1))
-        self.dwf.FDwfAnalogOutNodeAmplitudeSet(self.hdwf, c_int(0), c_int(0), c_double(1))
+        self.dwf.FDwfAnalogOutNodeEnableSet(self.hdwf, c_int(channel), c_int(0), c_int(1))  # carrier
+        self.dwf.FDwfAnalogOutNodeFunctionSet(self.hdwf, c_int(channel), c_int(0), c_int(1))  # sine
+        self.dwf.FDwfAnalogOutNodeFrequencySet(self.hdwf, c_int(channel), c_int(0), c_double(1))
+        self.dwf.FDwfAnalogOutNodeAmplitudeSet(self.hdwf, c_int(channel), c_int(0), c_double(1))
         # dwf.FDwfAnalogOutNodeOffsetSet(hdwf, c_int(0), c_int(0), c_double(0.5))
         # dwf.FDwfAnalogOutNodeEnableSet(hdwf, c_int(0), c_int(2), c_int(1))  # AM
         # dwf.FDwfAnalogOutNodeFunctionSet(hdwf, c_int(0), c_int(2), c_int(3))  # triangle
