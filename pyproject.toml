@@ -15,7 +15,7 @@ dependencies = [
     'scipy',
     'rich',
     'pyqtgraph',
-    'fswidget@git+https://gitlab.tugraz.at/flexsensor-public/modules/fswidgets.git@develop',
+    'fswidgets@git+https://gitlab.tugraz.at/flexsensor-public/modules/fswidgets.git@develop',
     'confighandler@git+https://gitlab.tugraz.at/flexsensor-public/modules/confighandler.git@develop',
     'cmp@git+https://gitlab.tugraz.at/flexsensor-public/modules/cmp.git@develop'
 ]
