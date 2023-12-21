@@ -38,7 +38,7 @@ class AD2CaptDeviceSimulator(BaseAD2CaptDevice):
            }
 
     @Slot()
-    def start_capture(self, capture):
+    def start_capturing_process(self, capture):
 
         if capture:
             self.logger.info(f"[{self.pref} Task] Setting up device for capturing.")

@@ -7,6 +7,7 @@ class AD2CaptDeviceProperties(GenericProperties):
                  measurement_time: float):
         super().__init__()
         # Laser properties
+
         self._samples_lost: float = self.to_float(samples_lost)
         self._samples_currputed: float = self.to_float(samples_currputed)
         self._sample_rate: float = self.to_float(acquisition_rate)

@@ -2,10 +2,13 @@ from ctypes import c_int, Array
 
 from PySide6.QtCore import QObject, Signal
 
+from model.AD2Constants import AD2Constants
+
 
 class AD2CaptDeviceInformationSignals(QObject):
     def __init__(self, parent=None):
         super().__init__(parent)
+
 
     # Connected Device Information
     num_of_connected_devices_changed = Signal(int)
@@ -17,6 +20,7 @@ class AD2CaptDeviceInformationSignals(QObject):
     device_name_changed = Signal(str)
     device_serial_number_changed = Signal(str)
     device_index_changed = Signal(int)
+    device_state_changed = Signal(AD2Constants.DeviceState)
 
 
 class AD2CaptDeviceInformationModel:
@@ -32,6 +36,7 @@ class AD2CaptDeviceInformationModel:
         self._device_connected: bool = False
         self._device_name: str = "Unknown"
         self._device_serial_number: str = "Unknown"
+        self._device_state: AD2Constants.DeviceState = AD2Constants.DeviceState.ACQ_NOT_STARTED()
 
     # ==================================================================================================================
     # Connected Device Information
@@ -115,3 +120,12 @@ class AD2CaptDeviceInformationModel:
         else:
             self._device_index = int(value)
         self.signals.device_serial_number_changed.emit(self.device_index)
+
+    @property
+    def device_state(self) -> AD2Constants.DeviceState:
+        return self._device_state
+
+    @device_state.setter
+    def device_state(self, value: AD2Constants.DeviceState):
+        self._device_state = value
+        self.signals.device_state_changed.emit(self.device_state)

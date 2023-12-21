@@ -1,12 +1,12 @@
-from ctypes import c_int, Array, c_byte
+from ctypes import c_int, Array
 
 from PySide6.QtCore import QObject, Signal
 
 from CaptDeviceControl.model.AD2Constants import AD2Constants
 from CaptDeviceControl.CaptDeviceConfig import CaptDeviceConfig as Config
-from CaptDeviceControl.model.AD2CaptDeviceAnalogInModel import AD2CaptDeviceAnalogInModel
-from CaptDeviceControl.model.AD2CaptDeviceInformationModel import AD2CaptDeviceInformationSignals, \
-    AD2CaptDeviceInformationModel
+from model.submodels.AD2CaptDeviceAnalogInModel import AD2CaptDeviceAnalogInModel
+from model.submodels.AD2CaptDeviceCapturingModel import AD2CaptDeviceCapturingModel
+from model.submodels.AD2CaptDeviceInformationModel import AD2CaptDeviceInformationModel
 
 
 # from MeasurementData.Properties.AD2CaptDeviceProperties import AD2CaptDeviceProperties
@@ -15,6 +15,7 @@ from CaptDeviceControl.model.AD2CaptDeviceInformationModel import AD2CaptDeviceI
 class AD2CaptDeviceSignals(QObject):
     def __init__(self, parent=None):
         super().__init__(parent)
+
 
     ad2captdev_config_changed = Signal(Config)
 
@@ -46,6 +47,8 @@ class AD2CaptDeviceSignals(QObject):
     stop_recording_changed = Signal(bool)
     reset_recording_changed = Signal(bool)
     capturing_finished_changed = Signal(bool)
+
+    device_state_changed = Signal(AD2Constants.DeviceState)
 
     # Multiprocessing Information
     pid_changed = Signal(int)
@@ -85,42 +88,24 @@ class AD2CaptDeviceModel:
     def __init__(self, ad2captdev_config: Config):
         self.signals = AD2CaptDeviceSignals()
         self.ad2captdev_config = ad2captdev_config
+        self.ad2captdev_config.autosave(enable=True, path="./")
 
         # WaveForms Runtime (DWF) Information
         self._dwf_version: str = "Unknown"
+        # Multiprocessing Information
+        self._pid: int = 0
 
         self.device_information = AD2CaptDeviceInformationModel()
         self.analog_in = AD2CaptDeviceAnalogInModel(self.ad2captdev_config)
-
+        self.capturing_information = AD2CaptDeviceCapturingModel(self.ad2captdev_config)
         # Acquisition Settings
-        self._sample_rate: int = self.ad2captdev_config.sample_rate.value
-        self._streaming_rate: int = self.ad2captdev_config.streaming_rate.value
-
-        self._duration_streaming_history: float = 0
 
         # Analog Out Information
         self.aout_channels: list = []
 
-        # Acquired Signal Information
-        self._recorded_samples: list = []
-        self._recording_time: float = 0
-        self._samples_captured: int = 0
-        self._samples_lost: int = 0
-        self._samples_corrupted: int = 0
-        self._capturing_finished: bool = False
 
-        # Actually for the worker, these are the samples that have not been consumed yet by the UI thread.
-        self._unconsumed_stream_samples: int = 0
-        self._unconsumed_capture_samples: int = 0
 
-        # Recording Flags (starting, stopping and pausing)
-        self._device_capturing_state: AD2Constants.CapturingState = AD2Constants.CapturingState.STOPPED()
-        self._start_recording = False
-        self._stop_recording = True
-        self._reset_recording = True
 
-        # Multiprocessing Information
-        self._pid: int = 0
 
         # ==============================================================================================================
         # Delete later
@@ -167,37 +152,8 @@ class AD2CaptDeviceModel:
             self._dwf_version = value
         self.signals.dwf_version_changed.emit(self.dwf_version)
 
-    # ==================================================================================================================
-    # Acquisition Settings
-    # ==================================================================================================================
-    @property
-    def sample_rate(self):
-        return self._sample_rate
 
-    @sample_rate.setter
-    def sample_rate(self, value):
-        self._sample_rate = value
-        self.ad2captdev_config.sample_rate.set(self._sample_rate)
-        self.signals.sample_rate_changed.emit(self._sample_rate)
 
-    @property
-    def streaming_rate(self):
-        return self._sample_rate
-
-    @streaming_rate.setter
-    def streaming_rate(self, value):
-        self._streaming_rate = value
-        self.ad2captdev_config.streaming_rate.set(self._streaming_rate)
-        self.signals.streaming_rate_changed.emit(self._streaming_rate)
-
-    @property
-    def duration_streaming_history(self) -> float:
-        return self._duration_streaming_history
-
-    @duration_streaming_history.setter
-    def duration_streaming_history(self, value: float):
-        self._duration_streaming_history = value
-        self.signals.duration_streaming_history_changed.emit(self.duration_streaming_history)
 
     # ==================================================================================================================
     # Analog Out Information
@@ -211,104 +167,6 @@ class AD2CaptDeviceModel:
         self._aout_channels = value
         self.signals.aout_channels_changed.emit(self.aout_channels)
 
-    # ==================================================================================================================
-    # Acquired Signal Information
-    # ==================================================================================================================
-    @property
-    def recorded_samples(self) -> list:
-        return self._recorded_samples
-
-    @recorded_samples.setter
-    def recorded_samples(self, value: list):
-        self._recorded_samples = value
-        self.samples_captured = len(self._recorded_samples)
-        # self.signals.num_of_current_recorded_samples_changed.emit(self.num_of_current_recorded_samples)
-        self.signals.recorded_samples_changed.emit(self.recorded_samples)
-
-    @property
-    def recording_time(self) -> float:
-        return self._recording_time
-
-    @recording_time.setter
-    def recording_time(self, value: float):
-        self._recording_time = value
-        self.signals.recording_time_changed.emit(self.recording_time)
-
-    @property
-    def samples_captured(self) -> int:
-        return self._samples_captured
-
-    @samples_captured.setter
-    def samples_captured(self, value: int):
-        self._samples_captured = value
-        self.signals.samples_captured_changed.emit(self.samples_captured)
-
-    @property
-    def samples_lost(self) -> int:
-        return self._samples_lost
-
-    @samples_lost.setter
-    def samples_lost(self, value: int):
-        self._samples_lost = value
-        self.signals.samples_lost_changed.emit(self.samples_lost)
-
-    @property
-    def samples_corrupted(self) -> int:
-        return self._samples_corrupted
-
-    @samples_corrupted.setter
-    def samples_corrupted(self, value: int):
-        self._samples_corrupted = value
-        self.signals.samples_corrupted_changed.emit(self.samples_corrupted)
-
-    @property
-    def capturing_finished(self) -> bool:
-        return self._capturing_finished
-
-    @capturing_finished.setter
-    def capturing_finished(self, value: bool):
-        self._capturing_finished = value
-        print(f"Set _capturing_finished to {self._capturing_finished}")
-        self.signals.capturing_finished_changed.emit(self._capturing_finished)
-
-    # ==================================================================================================================
-    # Recording Flags (starting, stopping and pausing)
-    # ==================================================================================================================
-    @property
-    def device_capturing_state(self) -> AD2Constants.CapturingState:
-        return self._device_capturing_state
-
-    @device_capturing_state.setter
-    def device_capturing_state(self, value: int):
-        self._device_capturing_state = value
-        self.signals.device_capturing_state_changed.emit(self.device_capturing_state)
-
-    @property
-    def start_recording(self) -> bool:
-        return self._start_recording
-
-    @start_recording.setter
-    def start_recording(self, value: bool):
-        self._start_recording = value
-        self.signals.start_recording_changed.emit(self._start_recording)
-
-    @property
-    def stop_recording(self) -> bool:
-        return self._stop_recording
-
-    @stop_recording.setter
-    def stop_recording(self, value: bool):
-        self._stop_recording = value
-        self.signals.stop_recording_changed.emit(self.stop_recording)
-
-    @property
-    def reset_recording(self):
-        return self._reset_recording
-
-    @reset_recording.setter
-    def reset_recording(self, value):
-        self._reset_recording = value
-        self.signals.reset_recording_changed.emit(self._reset_recording)
 
     # ==================================================================================================================
     # Multiprocessing Flags
@@ -322,23 +180,18 @@ class AD2CaptDeviceModel:
         self._pid = value
         self.signals.pid_changed.emit(self.pid)
 
-    @property
-    def unconsumed_stream_samples(self) -> int:
-        return self._unconsumed_stream_samples
 
-    @unconsumed_stream_samples.setter
-    def unconsumed_stream_samples(self, value: int):
-        self._unconsumed_stream_samples = value
-        self.signals.unconsumed_stream_samples_changed.emit(self.unconsumed_stream_samples)
 
     @property
-    def unconsumed_capture_samples(self) -> int:
-        return self._unconsumed_capture_samples
+    def device_state(self) -> AD2Constants.DeviceState:
+        return self._device_state
 
-    @unconsumed_capture_samples.setter
-    def unconsumed_capture_samples(self, value: int):
-        self._unconsumed_capture_samples = value
-        self.signals.unconsumed_capture_samples_changed.emit(self.unconsumed_capture_samples)
+    @device_state.setter
+    def device_state(self, value: AD2Constants.DeviceState):
+       #print(f"Set device_state to {value}")
+        self._device_state = value
+        self.signals.device_state_changed.emit(self._device_state)
+
 
     # ==================================================================================================================
     # ==================================================================================================================

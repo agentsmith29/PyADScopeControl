@@ -19,16 +19,17 @@ class WidgetCapturingInformation(QWidget):
         layout.addWidget(self.led_conn_state, 0, 0)
         layout.addWidget(self.lbl_conn_state, 0, 1)
 
+        self.lbl_is_capt = QLabel("Not capturing")
+        self.led_is_capt = LEDIndicatorWidget(color="red")
+        layout.addWidget(self.led_is_capt, 1, 0)
+        layout.addWidget(self.lbl_is_capt, 1, 1)
 
         self.lbl_device_state = QLabel("Device State Unknown")
         self.led_device_state = LEDIndicatorWidget(color="gray")
         layout.addWidget(self.led_device_state, 2, 0)
         layout.addWidget(self.lbl_device_state, 2, 1)
 
-        self.lbl_is_capt = QLabel("Not capturing")
-        self.led_is_capt = LEDIndicatorWidget(color="red")
-        layout.addWidget(self.led_is_capt, 1, 0)
-        layout.addWidget(self.lbl_is_capt, 1, 1)
+
 
         grid_group_box.setLayout(layout)
         self.layout.addWidget(grid_group_box)
