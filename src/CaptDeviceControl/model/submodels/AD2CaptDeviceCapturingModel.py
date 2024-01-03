@@ -136,6 +136,7 @@ class AD2CaptDeviceCapturingModel:
 
     @property
     def start_recording(self) -> bool:
+        print(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> {self._start_recording}")
         return self._start_recording
 
     @start_recording.setter

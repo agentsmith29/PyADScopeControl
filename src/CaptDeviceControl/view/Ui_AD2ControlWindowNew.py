@@ -20,7 +20,6 @@ from PySide6.QtWidgets import (QApplication, QComboBox, QFormLayout, QFrame,
     QMainWindow, QMenuBar, QPushButton, QSizePolicy,
     QSpinBox, QToolButton, QWidget)
 import resources_rc
-import resources_rc
 
 class Ui_AD2ControlWindowNew(object):
     def setupUi(self, AD2ControlWindowNew):
@@ -641,6 +640,8 @@ class Ui_AD2ControlWindowNew(object):
 
         self.sb_acquisition_rate = QSpinBox(self.grd_controls)
         self.sb_acquisition_rate.setObjectName(u"sb_acquisition_rate")
+        self.sb_acquisition_rate.setMinimum(1)
+        self.sb_acquisition_rate.setMaximum(999999999)
 
         self.gridLayout_3.addWidget(self.sb_acquisition_rate, 0, 2, 1, 1)
 
@@ -796,7 +797,7 @@ class Ui_AD2ControlWindowNew(object):
 
         self.btn_record = QPushButton(self.horizontalFrame)
         self.btn_record.setObjectName(u"btn_record")
-        self.btn_record.setEnabled(True)
+        self.btn_record.setEnabled(False)
         self.btn_record.setMinimumSize(QSize(40, 40))
         self.btn_record.setMaximumSize(QSize(40, 40))
         self.btn_record.setBaseSize(QSize(40, 40))
@@ -826,10 +827,13 @@ class Ui_AD2ControlWindowNew(object):
 "\n"
 "QPushButton:checked {	\n"
 "	background-color: rgb(78, 47, 58);\n"
+"	icon: url(:/single-color/icons-svg/single_color/cil-media-play.svg);\n"
+"   background-color: rgb(183, 0, 0);\n"
 "}\n"
 "")
         icon3 = QIcon()
         icon3.addFile(u":/icons-svg/icons-svg/cil-media-record.svg", QSize(), QIcon.Normal, QIcon.Off)
+        icon3.addFile(u":/single-color/icons-svg/single_color/cil-media-play.svg", QSize(), QIcon.Selected, QIcon.On)
         self.btn_record.setIcon(icon3)
         self.btn_record.setCheckable(True)
         self.btn_record.setChecked(False)

@@ -795,7 +795,14 @@ QTabBar::tab:selected {
         </widget>
        </item>
        <item row="0" column="2">
-        <widget class="QSpinBox" name="sb_acquisition_rate"/>
+        <widget class="QSpinBox" name="sb_acquisition_rate">
+         <property name="minimum">
+          <number>1</number>
+         </property>
+         <property name="maximum">
+          <number>999999999</number>
+         </property>
+        </widget>
        </item>
        <item row="1" column="2">
         <widget class="QComboBox" name="cb_streaming_history"/>
@@ -1038,7 +1045,7 @@ QPushButton:disabled {
           <item>
            <widget class="QPushButton" name="btn_record">
             <property name="enabled">
-             <bool>true</bool>
+             <bool>false</bool>
             </property>
             <property name="minimumSize">
              <size>
@@ -1085,6 +1092,8 @@ QPushButton:disabled {
 
 QPushButton:checked {	
 	background-color: rgb(78, 47, 58);
+	icon: url(:/single-color/icons-svg/single_color/cil-media-play.svg);
+   background-color: rgb(183, 0, 0);
 }
 </string>
             </property>
@@ -1093,7 +1102,8 @@ QPushButton:checked {
             </property>
             <property name="icon">
              <iconset resource="resources.qrc">
-              <normaloff>:/icons-svg/icons-svg/cil-media-record.svg</normaloff>:/icons-svg/icons-svg/cil-media-record.svg</iconset>
+              <normaloff>:/icons-svg/icons-svg/cil-media-record.svg</normaloff>
+              <selectedon>:/single-color/icons-svg/single_color/cil-media-play.svg</selectedon>:/icons-svg/icons-svg/cil-media-record.svg</iconset>
             </property>
             <property name="checkable">
              <bool>true</bool>
@@ -1181,7 +1191,6 @@ QPushButton:disabled {
  </widget>
  <resources>
   <include location="resources.qrc"/>
-  <include location="../../../../flexsensor/src/FlexSensor/resources/resources.qrc"/>
  </resources>
  <connections/>
 </ui>

@@ -15,6 +15,8 @@ from CaptDeviceControl.model.AD2Constants import AD2Constants
 
 
 class MPCaptDevice(cmp.CProcess, ):
+
+
     @staticmethod
     def timeit(func):
         def wrapper(self, *args, **kwargs):
@@ -37,38 +39,43 @@ class MPCaptDevice(cmp.CProcess, ):
                          internal_log=internal_log,
                          internal_log_level=internal_log_level)
 
+        # Objects for data exchange
+        self.start_capture_flag: Value = start_capture_flag
+        self.kill_capture_flag: Value = kill_capture_flag
+        self.stream_data_queue = streaming_data_queue
+        self.capture_data_queue = capture_data_queue
+
+        # WaveForms api objects and handles
+        self.dwf = None
+        self.hdwf = None
+
+        self._dwf_version = None
+
+        self._connected_devices = []
+        self._ain_channels = []
+
+        # Capture data counters
+        self._selected_device_index = 0
+        self._selected_ain_channel = 0
+        self._sample_rate = 0
+        self._connected = False
+        self._device_serial_number: str = ""
+        self._device_name: str = ""
+
         self._device_capturing = False
+
+        # ==============================================================================================================
         self._c_samples = None
         self._c_corrupted = None
         self._c_lost = None
         self._c_available = None
-
-        self.start_capture_flag: Value = start_capture_flag
-        self.kill_capture_flag: Value = kill_capture_flag
-
-        self.stream_data_queue = streaming_data_queue
-        self.capture_data_queue = capture_data_queue
-
-        self.dwf = None
-        self.hdwf = None
-
-        # Capture data counters
-        self._selected_device_index = 0
-
-        self._dwf_version = None
-        self._device_serial_number: str = ""
-        self._device_name: str = ""
-        self._connected = False
-
-        self._connected_devices = []
-
+        # ==============================================================================================================
         self._samples_lost = 0
         self._samples_corrupted = 0
 
     # ==================================================================================================================
     # Getter and Setter
     # ==================================================================================================================
-
     @CProperty
     def dwf_version(self):
         return self._dwf_version
@@ -79,23 +86,12 @@ class MPCaptDevice(cmp.CProcess, ):
 
     @CProperty
     def connected_devices(self) -> list:
+        """ Returns the list of connected devices."""
         return self._connected_devices
 
     @connected_devices.setter(emit_to='connected_devices_changed')
     def connected_devices(self, value: list):
         self._connected_devices = value
-
-    @cmp.CProcess.register_signal(signal_name='selected_device_index_changed')
-    def selected_device_index(self, device_index: int):
-        # self.logger.debug(f"*** Selected device index {device_index}.")
-        self._selected_device_index = device_index
-        # If the selected device index change, we need to update the device information
-        self.device_name = self.get_device_name(self._selected_device_index)
-        self.device_serial_number = self.get_device_serial_number(self._selected_device_index)
-
-        self.ain_channels = self.get_ain_channels(self._selected_device_index)
-        self.ain_buffer_size = self.get_ain_buffer_size(self._selected_device_index)
-        return self._selected_device_index
 
     @CProperty
     def device_name(self):
@@ -122,13 +118,54 @@ class MPCaptDevice(cmp.CProcess, ):
         self._connected = value
 
     @CProperty
-    def ain_channels(self, device_id):
+    def ain_channels(self) -> list:
         return self._ain_channels
 
     @ain_channels.setter(emit_to='ain_channels_changed')
     def ain_channels(self, value):
         self.logger.info("Setting ain channels.")
         self._ain_channels = value
+
+    @CProperty
+    def device_capturing(self):
+        return self._device_capturing
+
+    @device_capturing.setter(emit_to='device_capturing_changed')
+    def device_capturing(self, capturing: bool):
+        self._device_capturing = capturing
+
+    @CProperty
+    def selected_ain_channel(self) -> int:
+        return self._selected_ain_channel
+    @selected_ain_channel.setter(emit_to='selected_ain_channel_changed')
+    def selected_ain_channel(self, value: int):
+        self.logger.debug(f"Setting selected ain channel to {value}.")
+        self._selected_ain_channel = value
+
+    @CProperty
+    def sample_rate(self) -> float:
+        return self._sample_rate
+
+    @sample_rate.setter(emit_to='sample_rate_changed')
+    def sample_rate(self, value):
+        self._sample_rate = value
+
+    @CProperty
+    def selected_device_index(self):
+        """ Returns the selected device index."""
+        return self._selected_device_index
+
+    @selected_device_index.setter(emit_to='selected_device_index_changed')
+    def selected_device_index(self, device_index: int):
+        """ Sets the selected device index."""
+        self._selected_device_index = device_index
+        # If the selected device index change, we need to update the device information
+        self.device_name = self.get_device_name(self._selected_device_index)
+        self.device_serial_number = self.get_device_serial_number(self._selected_device_index)
+
+        self.ain_channels = self.get_ain_channels(self._selected_device_index)
+        self.ain_buffer_size = self.get_ain_buffer_size(self._selected_device_index)
+
 
     # ==================================================================================================================
     #
@@ -144,14 +181,9 @@ class MPCaptDevice(cmp.CProcess, ):
 
         self.dwf_version = self.get_dwf_version()
 
-    #@CProperty
-    #def device_capturing(self, capturing: bool):
-    #    return self._device_capturing
-
-    #@device_capturing.setter(emit_to='device_capturing_changed')
-    #def device_capturing(self, capturing: bool):
-    #    self._device_capturing = capturing
-
+    # ==================================================================================================================
+    # DWF FUnctions
+    # ==================================================================================================================
     def get_dwf_version(self) -> str:
         self.logger.debug(f"Getting DWF version information...")
         version = create_string_buffer(16)
@@ -191,7 +223,23 @@ class MPCaptDevice(cmp.CProcess, ):
             # _mp_log_debug(f"Found {type} device: {devicename.value.decode('UTF-8')} ({serialnum.value.decode('UTF-8')})")
         self.logger.info(f"Found {len(connected_devices)} devices.")
         return connected_devices
+    # ==================================================================================================================
+    # Settings from process Control
+    # ==================================================================================================================
 
+    @cmp.CProcess.register_signal()
+    def set_selected_ain_channel(self, ain_channel):
+        self.selected_ain_channel = ain_channel
+        #self.ain_buffer_size = self.get_ain_buffer_size(self._selected_device_index)
+
+    @cmp.CProcess.register_signal()
+    def set_selected_device(self, ain_channel):
+        self.selected_device_index = ain_channel
+        # self.ain_buffer_size = self.get_ain_buffer_size(self._selected_device_index)
+
+    @cmp.CProcess.register_signal()
+    def set_sample_rate(self, sample_rate):
+        self.sample_rate = sample_rate
     # ==================================================================================================================
     # Functions for opening and closing the device
     # ==================================================================================================================
@@ -201,7 +249,7 @@ class MPCaptDevice(cmp.CProcess, ):
         Opens the device and returns the handle.
         :return: Device handle.
         """
-        self.selected_device_index(device_index)
+        self.selected_device_index = device_index
         if self.hdwf is not None or not isinstance(self.hdwf, c_int):
             self.hdwf = c_int()
 
@@ -471,14 +519,17 @@ class MPCaptDevice(cmp.CProcess, ):
         :param sample_rate:
         :return: None
         """
-        self.logger.info(f"Starting capture on channel {ain_channel} with rate {sample_rate} Hz.")
+        self.selected_ain_channel = ain_channel
+        self.sample_rate = sample_rate
+
+        self.logger.info(f"Starting capture on channel {self.selected_ain_channel} with rate {self.sample_rate} Hz.")
         hdwf = self.hdwf
         self.device_state(AD2Constants.DeviceState.DEV_CAPT_SETUP())
 
-        ain_channel = int(0)
-        self.setup_sine_wave(ain_channel)
 
-        self.setup_acquisition(sample_rate, ain_channel)
+        self.setup_sine_wave(self.selected_ain_channel)
+
+        self.setup_acquisition(sample_rate, self.selected_ain_channel)
 
         # Variable to receive the acquisition state
         # self.dwf.FDwfAnalogInStatus(self.hdwf, c_int(1), byref(self._ain_device_state))
@@ -508,9 +559,6 @@ class MPCaptDevice(cmp.CProcess, ):
 
         try:
             # self.dwf.FDwfAnalogOutReset(self.hdwf, c_int(0))
-
-            ##plt.ion()
-            ##hl, = plt.plot([], [])
             self.device_state(AD2Constants.DeviceState.DEV_CAPT_STREAMING())
             while self.kill_capture_flag.value == int(False):
                 self.dwf.FDwfAnalogInStatus(hdwf, c_int(1), byref(sts))
@@ -520,13 +568,11 @@ class MPCaptDevice(cmp.CProcess, ):
 
                 # Checks the state of the acquisition. To read the data from the device, set fReadData to TRUE. For
                 # single acquisition mode, the data will be read only when the acquisition is finished
-
                 if sts == DwfStateConfig or sts == DwfStatePrefill or sts == DwfStateArmed:
                     # self.device_state(AD2Constants.DeviceState.ACQ_NOT_STARTED())
                     continue  # Acquisition not yet started.
 
                 self.dwf.FDwfAnalogInStatusRecord(hdwf, byref(cAvailable), byref(cLost), byref(cCorrupted))
-                # self.dwf.FDwfAnalogInStatusSamplesValid(self.hdwf, byref(self.cValid))
                 if cAvailable.value == 0:
                     # self.device_state(AD2Constants.DeviceState.NO_SAMPLES_AVAILABLE())
                     continue
@@ -539,11 +585,7 @@ class MPCaptDevice(cmp.CProcess, ):
                 iteration_time = time.time() - time_start
                 self.stream_data_queue.put(arr)
 
-                #     #np.delete(arr
-                # else:
-                #     print(f"rgd_samples is empty.")
-
-                if self.start_capture_flag.value == int(True) :
+                if self.start_capture_flag.value == int(True):
                     if not capture_started:
                         self.capture_process_state(AD2Constants.CapturingState.RUNNING())
                         self.logger.info(
@@ -551,7 +593,6 @@ class MPCaptDevice(cmp.CProcess, ):
                         time_capture_started = time.time()
                     capture_started = True
                     capture_ended = False
-                    # capture_samples = capture_samples + len(arr)
                     self.capture_data_queue.put(arr)
                 elif self.start_capture_flag.value == int(False) and capture_started:
                     capture_started = False
@@ -562,12 +603,8 @@ class MPCaptDevice(cmp.CProcess, ):
                     time_capture_stopped = time.time()
                     time_captured = time_capture_stopped - time_capture_started
                     self.logger.info(
-                            f"Acquisition stopped after {time_captured} seconds. Captured {capture_samples} "
-                            f"samples. Resulting in a time of {capture_samples / sample_rate} s.")
-                    #    capture_ended = True
-                    #    capture_started = False
-                    #    # self.capture_data_queue.put(arr)
-                #self._c_samples += self._c_available.value
+                        f"Acquisition stopped after {time_captured} seconds. Captured {capture_samples} "
+                        f"samples. Resulting in a time of {capture_samples / self.sample_rate} s.")
 
 
 
@@ -580,12 +617,12 @@ class MPCaptDevice(cmp.CProcess, ):
     # ==================================================================================================================
     # Others
     # ==================================================================================================================
-    def setup_sine_wave(self, channel: int = 0):
+    def setup_sine_wave(self, channel: int = 0, amplitude: float = 1, frequency: float = 1):
         self.logger.debug("Generating AM sine wave...")
         self.dwf.FDwfAnalogOutNodeEnableSet(self.hdwf, c_int(channel), c_int(0), c_int(1))  # carrier
         self.dwf.FDwfAnalogOutNodeFunctionSet(self.hdwf, c_int(channel), c_int(0), c_int(1))  # sine
-        self.dwf.FDwfAnalogOutNodeFrequencySet(self.hdwf, c_int(channel), c_int(0), c_double(1))
-        self.dwf.FDwfAnalogOutNodeAmplitudeSet(self.hdwf, c_int(channel), c_int(0), c_double(1))
+        self.dwf.FDwfAnalogOutNodeFrequencySet(self.hdwf, c_int(channel), c_int(0), c_double(frequency))
+        self.dwf.FDwfAnalogOutNodeAmplitudeSet(self.hdwf, c_int(channel), c_int(0), c_double(amplitude))
         # dwf.FDwfAnalogOutNodeOffsetSet(hdwf, c_int(0), c_int(0), c_double(0.5))
         # dwf.FDwfAnalogOutNodeEnableSet(hdwf, c_int(0), c_int(2), c_int(1))  # AM
         # dwf.FDwfAnalogOutNodeFunctionSet(hdwf, c_int(0), c_int(2), c_int(3))  # triangle
@@ -594,6 +631,9 @@ class MPCaptDevice(cmp.CProcess, ):
         self.dwf.FDwfAnalogOutConfigure(self.hdwf, c_int(channel), c_int(1))
         time.sleep(1)
         self.logger.debug(f"Sine wave on output channel {channel} configured.")
+
+
+
 
 
 if __name__ == "__main__":

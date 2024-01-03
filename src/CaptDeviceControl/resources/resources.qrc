@@ -1,6 +1,5 @@
 <RCC>
   <qresource prefix="icons">
-    <file>icons/cil-record.png</file>
     <file>icons/cil-airplane-mode-off.png</file>
     <file>icons/cil-alarm.png</file>
     <file>icons/cil-align-left.png</file>
@@ -265,5 +264,8 @@
     <file>icons-svg/cil-media-pause.svg</file>
     <file>icons-svg/cil-media-stop.svg</file>
     <file>icons-svg/cil-media-play.svg</file>
+  </qresource>
+  <qresource prefix="single-color">
+    <file>icons-svg/single_color/cil-media-play.svg</file>
   </qresource>
 </RCC>

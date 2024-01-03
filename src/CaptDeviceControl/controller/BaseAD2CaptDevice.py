@@ -29,6 +29,7 @@ class BaseAD2CaptDevice(cmp.CProcessControl):
     device_serial_number_changed = Signal(str, name="device_serial_number_changed")
 
     ain_channels_changed = Signal(list, name="ain_channels_changed")
+    selected_ain_channel_changed = Signal(int, name="selected_ain_channel_changed")
     ain_buffer_size_changed = Signal(int, name="ain_buffer_size_changed")
     analog_in_bits_changed = Signal(int, name="analog_in_bits_changed")
     analog_in_buffer_size_changed = Signal(int, name="analog_in_buffer_size_changed")
@@ -77,11 +78,16 @@ class BaseAD2CaptDevice(cmp.CProcessControl):
         self.connect_signals()
         self._connect_config_signals()
 
+        self.discover_connected_devices()
+
+        self.selected_ain_channel = self.model.analog_in.selected_ain_channel
+
+
     def connect_signals(self):
         self.dwf_version_changed.connect(self._on_dwf_version_changed)
         self.discovered_devices_changed.connect(self.on_discovered_devices_changed)
 
-        self.selected_device_index_changed.connect(self.on_selected_device_index_changed)
+        self.selected_device_index_changed.connect(self._on_selected_device_index_changed)
 
         self.device_connected_changed.connect(
             lambda x: type(self.model.device_information).device_connected.fset(self.model.device_information, x))
@@ -92,6 +98,8 @@ class BaseAD2CaptDevice(cmp.CProcessControl):
 
         self.ain_channels_changed.connect(
             lambda x: type(self.model.analog_in).ain_channels.fset(self.model.analog_in, x))
+        #self.selected_ain_channel_changed.connect(
+        #    lambda x: type(self.model.analog_in).selected_ain_channel.fset(self.model.analog_in, x))
         self.ain_buffer_size_changed.connect(
             lambda x: type(self.model.analog_in).ain_buffer_size.fset(self.model.analog_in, x))
         self.analog_in_bits_changed.connect(
@@ -113,9 +121,29 @@ class BaseAD2CaptDevice(cmp.CProcessControl):
 
     def _connect_config_signals(self):
         self.model.ad2captdev_config.streaming_history.connect(self._on_streaming_history_changed)
+        #self.model.ad2captdev_config.selected_device_index.connect(self._on_selected_device_index_changed)
     # ==================================================================================================================
     #   Device control
     # ==================================================================================================================
+    @cmp.CProcessControl.register_function()
+    def set_selected_ain_channel(self, ain_channel_index: int):
+        """ Sets the selected analog in channel."""
+
+    @cmp.CProcessControl.register_function()
+    def set_selected_device(self, device_index: int):
+        """
+        Sets the selected device index.
+        :param device_index: The index of the device.
+        """
+        self.model.device_information.selected_device_index = device_index
+
+    @cmp.CProcessControl.register_function()
+    def set_sample_rate(self, sample_rate: float):
+        """
+        Sets the sample rate.
+        :param sample_rate: The sample rate.
+        """
+
     @cmp.CProcessControl.register_function(open_device_finished)
     def open_device(self, device_index):
         """
@@ -165,17 +193,9 @@ class BaseAD2CaptDevice(cmp.CProcessControl):
     def on_discovered_devices_changed(self, devices: list):
         self.model.device_information.connected_devices = devices
 
-    # ==================================================================================================================
-    # Selected device index
-    # ==================================================================================================================
-    @cmp.CProcessControl.register_function(discovered_devices_changed)
-    def selected_device_index(self, index):
-        """
-        Sets the selected device index.
-        :param index: The index of the device.
-        """
 
-    def on_selected_device_index_changed(self, index):
+
+    def _on_selected_device_index_changed(self, index):
         self.model.device_information.selected_device_index = index
 
     @abstractmethod
@@ -311,4 +331,4 @@ class BaseAD2CaptDevice(cmp.CProcessControl):
     # Destructor
     # ==================================================================================================================
     def exit(self):
-        self.mpcaptdevicecontrol.safe_exit()
+        self.safe_exit()

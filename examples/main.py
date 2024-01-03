@@ -34,7 +34,7 @@ if __name__ == "__main__":
 
 
     conf = CaptDevice.Config()
-    #conf.load("config.yaml")
+    conf.load("CaptDeviceConfig.yaml")
 
 
     model = CaptDevice.Model(conf)

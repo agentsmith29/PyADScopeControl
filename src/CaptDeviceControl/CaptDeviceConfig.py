@@ -13,17 +13,18 @@ class CaptDeviceConfig(cfg.ConfigNode):
 
     def __init__(self) -> None:
         super().__init__(internal_log=True, internal_log_level=logging.DEBUG)
+        self.selected_device_index = cfg.Field(0, friendly_name="Selected device",
+                                         description="Selected device from the device list provided by the DreamWaves API.")
+
         self.sample_rate = cfg.Field(500, friendly_name="Sample rate",
                                      description="Sample rate of the device")
+
         self.streaming_rate = cfg.Field(500, friendly_name="Streaming rate",
                                      description="Streaming rate in Hz (should be below 1kHz)")
 
 
         self.ain_channel = cfg.Field(
-            cfg.SelectableList([0, 1],
-                               description=["Channel 0", "Channel 1"],
-                               selected_index=0,
-                               ),
+            cfg.SelectableList([0, 1], description=["Channel 0", "Channel 1"],  selected_index=1),
             friendly_name="Analog In Channel",
             description="Analog in channel. Defines which channel is used for capturing.")
 
@@ -35,15 +36,10 @@ class CaptDeviceConfig(cfg.ConfigNode):
                                description=["100 ms", "200 ms", "500 ms", "1 s", "2 s", "5 s", "10 s", "20 s", "30 s"],
                                selected_index=3,
                                ),
-            friendly_name="Streaming history",
-            description="Defines the range of the stream in ms")
+            friendly_name="Streaming history", description="Defines the range of the stream in ms")
 
 
 
-        # TODO: Old configs (not used and will probably removed in future)
-        self.total_samples = cfg.Field(200000)
-        self.sample_time = cfg.Field(45)
-        self.ad2_raw_out_file = cfg.Field("{output_directory}/measurement/ad2_raw/ad2_out_{wafer_nr}_{date}.csv")
 
         self.register()
 

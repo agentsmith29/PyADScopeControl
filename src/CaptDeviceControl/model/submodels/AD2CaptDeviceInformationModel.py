@@ -2,6 +2,7 @@ from ctypes import c_int, Array
 
 from PySide6.QtCore import QObject, Signal
 
+from CaptDeviceConfig import CaptDeviceConfig
 from model.AD2Constants import AD2Constants
 
 
@@ -24,15 +25,15 @@ class AD2CaptDeviceInformationSignals(QObject):
 
 
 class AD2CaptDeviceInformationModel:
-    def __init__(self):
+    def __init__(self, config: CaptDeviceConfig):
         self.signals = AD2CaptDeviceInformationSignals()
-
+        self._config = config
         # Connected Device Information
         self._num_of_connected_devices: int = 0
         self._connected_devices: list = []
 
         # Device Information
-        self._selected_device_index: int = 0
+        #self._selected_device_index: int = 0
         self._device_connected: bool = False
         self._device_name: str = "Unknown"
         self._device_serial_number: str = "Unknown"
@@ -64,11 +65,12 @@ class AD2CaptDeviceInformationModel:
 
     @property
     def selected_device_index(self) -> int:
-        return self._selected_device_index
+        return self._config.selected_device_index.get()
 
     @selected_device_index.setter
     def selected_device_index(self, value: int):
-        self._selected_device_index = value
+        print("selected_device_index", value)
+        self._config.selected_device_index.set(value)
         self.signals.selected_device_index_changed.emit(self.selected_device_index)
 
     # ==================================================================================================================

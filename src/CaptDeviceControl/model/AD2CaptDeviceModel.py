@@ -16,7 +16,6 @@ class AD2CaptDeviceSignals(QObject):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-
     ad2captdev_config_changed = Signal(Config)
 
     # WaveForms Runtime (DWF) Information
@@ -95,38 +94,13 @@ class AD2CaptDeviceModel:
         # Multiprocessing Information
         self._pid: int = 0
 
-        self.device_information = AD2CaptDeviceInformationModel()
+        self.device_information = AD2CaptDeviceInformationModel(self.ad2captdev_config)
         self.analog_in = AD2CaptDeviceAnalogInModel(self.ad2captdev_config)
         self.capturing_information = AD2CaptDeviceCapturingModel(self.ad2captdev_config)
         # Acquisition Settings
 
         # Analog Out Information
         self.aout_channels: list = []
-
-
-
-
-
-        # ==============================================================================================================
-        # Delete later
-        # Device information
-        #
-        self._device_ready: bool = False
-
-        self._hwdf = c_int()
-        self._auto_connect: bool = False
-
-        self._capturing_finished: bool = False
-        # Stores, if samples have been lost or are corrupted
-        self._fLost: int = 0
-        self._fCorrupted: int = 0
-        # List for storing the samples
-        # Stores only the current recorded values
-        self._measurement_time: float = 0
-        # Stores all recorded samples with a timestamp and the measurement time
-        self._all_recorded_samples: list = []
-        self._num_of_current_recorded_samples: int = 0
-        self._n_samples: int = 0
 
     @property
     def ad2captdev_config(self) -> Config:
@@ -152,9 +126,6 @@ class AD2CaptDeviceModel:
             self._dwf_version = value
         self.signals.dwf_version_changed.emit(self.dwf_version)
 
-
-
-
     # ==================================================================================================================
     # Analog Out Information
     # ==================================================================================================================
@@ -167,7 +138,6 @@ class AD2CaptDeviceModel:
         self._aout_channels = value
         self.signals.aout_channels_changed.emit(self.aout_channels)
 
-
     # ==================================================================================================================
     # Multiprocessing Flags
     # ==================================================================================================================
@@ -179,112 +149,3 @@ class AD2CaptDeviceModel:
     def pid(self, value: int):
         self._pid = value
         self.signals.pid_changed.emit(self.pid)
-
-
-
-    @property
-    def device_state(self) -> AD2Constants.DeviceState:
-        return self._device_state
-
-    @device_state.setter
-    def device_state(self, value: AD2Constants.DeviceState):
-       #print(f"Set device_state to {value}")
-        self._device_state = value
-        self.signals.device_state_changed.emit(self._device_state)
-
-
-    # ==================================================================================================================
-    # ==================================================================================================================
-    # DELETE LATER
-    # ==================================================================================================================
-    # ==================================================================================================================
-    @property
-    def auto_connect(self) -> bool:
-        return self._auto_connect
-
-    @auto_connect.setter
-    def auto_connect(self, value: bool):
-        self._auto_connect = value
-
-    @property
-    # def ad2_properties(self) -> AD2CaptDeviceProperties:
-    #    return AD2CaptDeviceProperties(self._fLost, self._fCorrupted,
-    #                                   self._sample_rate, self._n_samples,
-    #                                   self._measurement_time)
-
-    @property
-    def capturing_finished(self) -> bool:
-        return self._capturing_finished
-
-    @capturing_finished.setter
-    def capturing_finished(self, value: bool):
-        self._capturing_finished = value
-        self.signals.capturing_finished_changed.emit(self.capturing_finished)
-
-    @property
-    def measurement_time(self) -> float:
-        return self._measurement_time
-
-    @measurement_time.setter
-    def measurement_time(self, value: float):
-        self._measurement_time = value
-        self.signals.measurement_time_changed.emit(self.measurement_time)
-
-    @property
-    def hdwf(self) -> c_int:
-        return self._hwdf
-
-    @hdwf.setter
-    def hdwf(self, value: c_int):
-        self._hwdf = value
-        self.signals.hwdf_changed.emit(int(self._hwdf.value))
-
-    @property
-    def num_of_current_recorded_samples(self) -> int:
-        """Only setter property!"""
-        return self._num_of_current_recorded_samples
-
-    @property
-    def device_ready(self) -> bool:
-        return self._device_ready
-
-    @device_ready.setter
-    def device_ready(self, value: bool):
-        self._device_ready = value
-        self.signals.device_ready_changed.emit(self.device_ready)
-
-    @property
-    def all_recorded_samples(self) -> list:
-        return self._all_recorded_samples
-
-    @all_recorded_samples.setter
-    def all_recorded_samples(self, value: list):
-        self._all_recorded_samples = value
-        self.signals.all_recorded_samples_changed.emit(self.all_recorded_samples)
-
-    @property
-    def n_samples(self):
-        return self._n_samples
-
-    @n_samples.setter
-    def n_samples(self, value):
-        self._n_samples = value
-        self.signals.n_samples_changed.emit(self._n_samples)
-
-    @property
-    def fCorrupted(self):
-        return self._fCorrupted
-
-    @fCorrupted.setter
-    def fCorrupted(self, value):
-        self._fCorrupted = value
-        self.signals.fCorrupted_changed.emit(self._fCorrupted)
-
-    @property
-    def fLost(self):
-        return self._fLost
-
-    @fLost.setter
-    def fLost(self, value):
-        self._fLost = value
-        self.signals.fLost_changed.emit(self._fLost)
