@@ -3,7 +3,7 @@ from ctypes import c_int, Array
 from PySide6.QtCore import QObject, Signal
 
 from CaptDeviceConfig import CaptDeviceConfig
-from model.AD2Constants import AD2Constants
+from CaptDeviceControl.model.AD2Constants import AD2Constants
 
 
 class AD2CaptDeviceInformationSignals(QObject):

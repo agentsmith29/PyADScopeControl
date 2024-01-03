@@ -4,9 +4,9 @@ from PySide6.QtCore import QObject, Signal
 
 from CaptDeviceControl.model.AD2Constants import AD2Constants
 from CaptDeviceControl.CaptDeviceConfig import CaptDeviceConfig as Config
-from model.submodels.AD2CaptDeviceAnalogInModel import AD2CaptDeviceAnalogInModel
-from model.submodels.AD2CaptDeviceCapturingModel import AD2CaptDeviceCapturingModel
-from model.submodels.AD2CaptDeviceInformationModel import AD2CaptDeviceInformationModel
+from CaptDeviceControl.model.submodels.AD2CaptDeviceAnalogInModel import AD2CaptDeviceAnalogInModel
+from CaptDeviceControl.model.submodels.AD2CaptDeviceCapturingModel import AD2CaptDeviceCapturingModel
+from CaptDeviceControl.model.submodels.AD2CaptDeviceInformationModel import AD2CaptDeviceInformationModel
 
 
 # from MeasurementData.Properties.AD2CaptDeviceProperties import AD2CaptDeviceProperties

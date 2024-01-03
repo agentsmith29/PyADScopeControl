@@ -7,13 +7,13 @@ from collections import deque
 
 import cmp
 from PySide6.QtCore import QObject, QThreadPool, Signal
-
+from multiprocessing import Process, Queue, Value, Lock
 from numpy import ndarray
 from rich.logging import RichHandler
 
 from CaptDeviceControl.model.AD2CaptDeviceModel import AD2CaptDeviceModel, AD2CaptDeviceSignals
 from CaptDeviceControl.model.AD2Constants import AD2Constants
-from multiprocessing import Process, Queue, Value, Lock
+
 
 from CaptDeviceControl.controller.mp_AD2Capture.MPCaptDeviceControl import MPCaptDeviceControl
 from CaptDeviceControl.controller.mp_AD2Capture.MPCaptDevice import MPCaptDevice

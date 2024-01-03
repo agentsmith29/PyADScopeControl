@@ -17,7 +17,7 @@ from CaptDeviceControl.model.AD2CaptDeviceModel import AD2CaptDeviceModel
 from CaptDeviceControl.model.AD2Constants import AD2Constants
 from CaptDeviceControl.view.Ui_AD2ControlWindowNew import Ui_AD2ControlWindowNew
 from CaptDeviceControl.view.widget.WidgetCapturingInformation import WidgetCapturingInformation, WidgetDeviceInformation
-from model.submodels.AD2CaptDeviceAnalogInModel import AD2CaptDeviceAnalogInModel
+from CaptDeviceControl.model.submodels.AD2CaptDeviceAnalogInModel import AD2CaptDeviceAnalogInModel
 
 
 class ControlWindow(QMainWindow):
