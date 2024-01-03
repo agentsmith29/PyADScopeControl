@@ -217,6 +217,7 @@ class ControlWindow(QMainWindow):
             except Exception as e:
                 self.logger.error(f"Error: {e}")
             self._ui.btn_connect.setText("Disconnect")
+            self.capture_update_timer.start()
 
     def _on_ui_sample_rate_changed(self, sample_rate: int):
         self.model.sample_rate = sample_rate
@@ -228,7 +229,6 @@ class ControlWindow(QMainWindow):
     def _ui_on_btn_recording_clicked(self):
         if not self.model.capturing_information.device_capturing_state == AD2Constants.CapturingState.RUNNING():
             self._ui.btn_record.setChecked(True)
-            self.capture_update_timer.start()
             self.controller.start_capture()
         else:
             self._ui.btn_record.setChecked(False)
