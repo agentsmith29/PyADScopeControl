@@ -163,7 +163,7 @@ class MPCaptDevice(cmp.CProcess, ):
         self.device_name = self.get_device_name(self._selected_device_index)
         self.device_serial_number = self.get_device_serial_number(self._selected_device_index)
 
-        self.ain_channels = self.get_ain_channels(self._selected_device_index)
+        self.ain_channels = self.get_ain_channels()
         self.ain_buffer_size = self.get_ain_buffer_size(self._selected_device_index)
 
 
@@ -244,12 +244,11 @@ class MPCaptDevice(cmp.CProcess, ):
     # Functions for opening and closing the device
     # ==================================================================================================================
     @cmp.CProcess.register_signal()
-    def open_device(self, device_index) -> int:
+    def open_device(self) -> int:
         """
         Opens the device and returns the handle.
         :return: Device handle.
         """
-        self.selected_device_index = device_index
         if self.hdwf is not None or not isinstance(self.hdwf, c_int):
             self.hdwf = c_int()
 
@@ -288,17 +287,17 @@ class MPCaptDevice(cmp.CProcess, ):
     # ==================================================================================================================
     # Device Information
     # ==================================================================================================================
-    def get_ain_channels(self, device_id) -> list:
+    def get_ain_channels(self) -> list:
         cInfo = c_int()
-        self.dwf.FDwfEnumConfigInfo(c_int(device_id), c_int(1), byref(cInfo))
+        self.dwf.FDwfEnumConfigInfo(c_int(self.selected_device_index), c_int(1), byref(cInfo))
         ain_channels = cInfo.value
         if ain_channels == 0:
             # Sometimes, the device reports a wrong number of ain channels
             # so we can try to connect to the device first and retrieve the information
-            self.open_device(device_id)
+            self.open_device(self.selected_device_index)
             ain_channels = self.analog_in_channels_count()
             self.close_device()
-        self.logger.debug(f"Device {device_id} has {ain_channels} analog input channels.")
+        self.logger.debug(f"Device {self.selected_device_index} has {ain_channels} analog input channels.")
         return list(range(0, ain_channels))
 
     def get_ain_buffer_size(self, device_id) -> int:

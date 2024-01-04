@@ -213,7 +213,7 @@ class ControlWindow(QMainWindow):
         #    self._ui.btn_connect.setText("Connect")
         #else:
         try:
-            self.controller.open_device(self.model.device_information.selected_device_index)
+            self.controller.open_device()
             self.controller.start_capturing_process(
                 self.model.capturing_information.sample_rate
             )

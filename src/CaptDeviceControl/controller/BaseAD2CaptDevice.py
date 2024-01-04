@@ -144,7 +144,7 @@ class BaseAD2CaptDevice(cmp.CProcessControl):
         """
 
     @cmp.CProcessControl.register_function(open_device_finished)
-    def open_device(self, device_index):
+    def open_device(self):
         """
         Opens the device with the given id.
         :param device_id:
