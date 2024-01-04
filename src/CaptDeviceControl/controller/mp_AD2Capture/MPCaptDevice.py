@@ -55,14 +55,15 @@ class MPCaptDevice(cmp.CProcess, ):
         self._ain_channels = []
 
         # Capture data counters
-        self._selected_device_index = 0
-        self._selected_ain_channel = 0
+        self._selected_device_index: int = 0
+        self._selected_ain_channel: int = 0
         self._sample_rate = 0
         self._connected = False
         self._device_serial_number: str = ""
         self._device_name: str = ""
 
         self._device_capturing = False
+        self._ready_for_recording = False
 
         # ==============================================================================================================
         self._c_samples = None
@@ -137,6 +138,7 @@ class MPCaptDevice(cmp.CProcess, ):
     @CProperty
     def selected_ain_channel(self) -> int:
         return self._selected_ain_channel
+
     @selected_ain_channel.setter(emit_to='selected_ain_channel_changed')
     def selected_ain_channel(self, value: int):
         self.logger.debug(f"Setting selected ain channel to {value}.")
@@ -518,16 +520,13 @@ class MPCaptDevice(cmp.CProcess, ):
     #
     # ==================================================================================================================
     @cmp.CProcess.register_signal()
-    def start_capturing_process(self, sample_rate: float, ain_channel: int):
+    def start_capturing_process(self):
         """
         Captures data from the device and puts it into a queue.
         :param ain_channel:
         :param sample_rate:
         :return: None
         """
-        self.selected_ain_channel = ain_channel
-        self.sample_rate = sample_rate
-
         self.logger.info(f"Starting capture on channel {self.selected_ain_channel} with rate {self.sample_rate} Hz.")
         hdwf = self.hdwf
         self.device_state(AD2Constants.DeviceState.DEV_CAPT_SETUP())
@@ -535,7 +534,7 @@ class MPCaptDevice(cmp.CProcess, ):
 
         self.setup_sine_wave(self.selected_ain_channel)
 
-        self.setup_acquisition(sample_rate, self.selected_ain_channel)
+        self.setup_acquisition(self.sample_rate, self.selected_ain_channel)
 
         # Variable to receive the acquisition state
         # self.dwf.FDwfAnalogInStatus(self.hdwf, c_int(1), byref(self._ain_device_state))
@@ -566,6 +565,7 @@ class MPCaptDevice(cmp.CProcess, ):
         try:
             # self.dwf.FDwfAnalogOutReset(self.hdwf, c_int(0))
             self.device_state(AD2Constants.DeviceState.DEV_CAPT_STREAMING())
+            self.ready_for_recording = True
             while self.kill_capture_flag.value == int(False):
                 self.dwf.FDwfAnalogInStatus(hdwf, c_int(1), byref(sts))
                 # self._c_samples = 0
@@ -618,6 +618,7 @@ class MPCaptDevice(cmp.CProcess, ):
             self.logger.error(f"Error while capturing data from device: {e}")
             raise Exception(f"Error while capturing data from device: {e}")
         self.logger.info("Capture thread ended.")
+        self.ready_for_recording = False
         self.close_device()
 
     # ==================================================================================================================

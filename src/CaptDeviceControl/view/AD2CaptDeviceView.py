@@ -116,8 +116,7 @@ class ControlWindow(QMainWindow):
 
         # Connect the buttons
         self._ui.btn_play.clicked.connect(
-            lambda: self.controller.start_capturing_process(self.model.capturing_information.sample_rate,
-                                                            self.model.analog_in.selected_ain_channel)
+            lambda: self.controller.start_capturing_process()
         )
         self._ui.btn_stop.clicked.connect(self.controller.stop_capturing_process)
 
@@ -214,9 +213,6 @@ class ControlWindow(QMainWindow):
         #else:
         try:
             self.controller.open_device()
-            self.controller.start_capturing_process(
-                self.model.capturing_information.sample_rate
-            )
         except Exception as e:
             self.logger.error(f"Error: {e}")
         #self._ui.btn_connect.setText("Disconnect")

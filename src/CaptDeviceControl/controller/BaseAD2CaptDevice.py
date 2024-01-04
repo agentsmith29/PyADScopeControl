@@ -154,18 +154,19 @@ class BaseAD2CaptDevice(cmp.CProcessControl):
         :param device_id:
         :return:
         """
+        self.set_sample_rate(self.model.capturing_information.sample_rate)
+        self.set_selected_ain_channel(self.model.analog_in.selected_ain_channel)
 
     def on_open_device_finished(self, device_handle: int):
         self.logger.info(f"Opening device finished with handle {device_handle}")
-        self.start_capturing_process(self.model.capturing_information.sample_rate,
-                                     self.model.analog_in.selected_ain_channel)
+        self.start_capturing_process()
 
     def close_device(self):
         pass
         # self.close_device()
 
     @cmp.CProcessControl.register_function(capture_process_state_changed)
-    def start_capturing_process(self, sample_rate: float, ain_channel: int):
+    def start_capturing_process(self):
         """
         Starts the capturing process.
         :param sample_rate:
