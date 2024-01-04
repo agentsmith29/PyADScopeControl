@@ -141,6 +141,7 @@ class ControlWindow(QMainWindow):
         self.model.device_information.signals.device_name_changed.connect(self._on_device_name_changed)
         self.model.device_information.signals.device_serial_number_changed.connect(
             self._on_device_serial_number_changed)
+        self.model.capturing_information.signals.ready_for_recording_changed.connect(self._on_ready_for_recording_changed)
 
     # ==================================================================================================================
     # Slots
@@ -195,7 +196,6 @@ class ControlWindow(QMainWindow):
             self._ui.btn_reset.setEnabled(True)
             self._ui.btn_play.setEnabled(True)
             self._ui.btn_play.setChecked(True)
-            self.stream_update_timer.start()
 
     # ==================================================================================================================
     # UI Slots
@@ -206,17 +206,13 @@ class ControlWindow(QMainWindow):
     def _ui_on_selected_ain_changed(self, channel_index):
         """ Gets called if the ui changes the field (should modify the model) """
         self.model.analog_in.selected_ain_channel = channel_index
+
     def _on_ui_btn_connect_clicked(self):
-        #if self.model.device_information.device_connected:
-        #    self.controller.close_device()
-        #    self._ui.btn_connect.setText("Connect")
-        #else:
         try:
             self.controller.open_device()
         except Exception as e:
             self.logger.error(f"Error: {e}")
-        #self._ui.btn_connect.setText("Disconnect")
-        self.capture_update_timer.start()
+
 
     def _on_ui_sample_rate_changed(self, sample_rate: int):
         self.model.sample_rate = sample_rate
@@ -279,6 +275,14 @@ class ControlWindow(QMainWindow):
             self.capt_info.led_is_capt.set_color(color="red")
             self.capt_info.lbl_is_capt.setText(AD2Constants.CapturingState.STOPPED(True))
             self._ui.btn_record.setChecked(False)
+
+    def _on_ready_for_recording_changed(self, ready):
+        if ready:
+            self.capture_update_timer.start()
+            self.stream_update_timer.start()
+        else:
+            self.capture_update_timer.stop()
+            self.stream_update_timer.stop()
 
 
 
