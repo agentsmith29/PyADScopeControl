@@ -119,6 +119,9 @@ class ControlWindow(QMainWindow):
             lambda: self.controller.start_capturing_process(self.model.capturing_information.sample_rate,
                                                             self.model.analog_in.selected_ain_channel)
         )
+        self._ui.btn_stop.clicked.connect(self.controller.stop_capturing_process)
+
+
         self._ui.btn_record.clicked.connect(self._ui_on_btn_recording_clicked)
         self._ui.btn_reset.clicked.connect(self._ui_on_btn_reset_clicked)
 
@@ -205,19 +208,19 @@ class ControlWindow(QMainWindow):
         """ Gets called if the ui changes the field (should modify the model) """
         self.model.analog_in.selected_ain_channel = channel_index
     def _on_ui_btn_connect_clicked(self):
-        if self.model.device_information.device_connected:
-            self.controller.close_device()
-            self._ui.btn_connect.setText("Connect")
-        else:
-            try:
-                self.controller.open_device(self.model.device_information.selected_device_index)
-                self.controller.start_capturing_process(
-                    self.model.capturing_information.sample_rate
-                )
-            except Exception as e:
-                self.logger.error(f"Error: {e}")
-            self._ui.btn_connect.setText("Disconnect")
-            self.capture_update_timer.start()
+        #if self.model.device_information.device_connected:
+        #    self.controller.close_device()
+        #    self._ui.btn_connect.setText("Connect")
+        #else:
+        try:
+            self.controller.open_device(self.model.device_information.selected_device_index)
+            self.controller.start_capturing_process(
+                self.model.capturing_information.sample_rate
+            )
+        except Exception as e:
+            self.logger.error(f"Error: {e}")
+        #self._ui.btn_connect.setText("Disconnect")
+        self.capture_update_timer.start()
 
     def _on_ui_sample_rate_changed(self, sample_rate: int):
         self.model.sample_rate = sample_rate

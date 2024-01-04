@@ -14,7 +14,6 @@ from rich.logging import RichHandler
 from CaptDeviceControl.model.AD2CaptDeviceModel import AD2CaptDeviceModel, AD2CaptDeviceSignals
 from CaptDeviceControl.model.AD2Constants import AD2Constants
 
-
 from CaptDeviceControl.controller.mp_AD2Capture.MPCaptDeviceControl import MPCaptDeviceControl
 from CaptDeviceControl.controller.mp_AD2Capture.MPCaptDevice import MPCaptDevice
 
@@ -82,7 +81,6 @@ class BaseAD2CaptDevice(cmp.CProcessControl):
 
         self.selected_ain_channel = self.model.analog_in.selected_ain_channel
 
-
     def connect_signals(self):
         self.dwf_version_changed.connect(self._on_dwf_version_changed)
         self.discovered_devices_changed.connect(self.on_discovered_devices_changed)
@@ -98,7 +96,7 @@ class BaseAD2CaptDevice(cmp.CProcessControl):
 
         self.ain_channels_changed.connect(
             lambda x: type(self.model.analog_in).ain_channels.fset(self.model.analog_in, x))
-        #self.selected_ain_channel_changed.connect(
+        # self.selected_ain_channel_changed.connect(
         #    lambda x: type(self.model.analog_in).selected_ain_channel.fset(self.model.analog_in, x))
         self.ain_buffer_size_changed.connect(
             lambda x: type(self.model.analog_in).ain_buffer_size.fset(self.model.analog_in, x))
@@ -114,14 +112,15 @@ class BaseAD2CaptDevice(cmp.CProcessControl):
         self.device_state_changed.connect(
             lambda x: type(self.model.device_information).device_state.fset(self.model.device_information, x))
         self.capture_process_state_changed.connect(
-            lambda x: type(self.model.capturing_information).device_capturing_state.fset(self.model.capturing_information, x))
-
+            lambda x: type(self.model.capturing_information).device_capturing_state.fset(
+                self.model.capturing_information, x))
 
         self.open_device_finished.connect(self.on_open_device_finished)
 
     def _connect_config_signals(self):
         self.model.ad2captdev_config.streaming_history.connect(self._on_streaming_history_changed)
-        #self.model.ad2captdev_config.selected_device_index.connect(self._on_selected_device_index_changed)
+        # self.model.ad2captdev_config.selected_device_index.connect(self._on_selected_device_index_changed)
+
     # ==================================================================================================================
     #   Device control
     # ==================================================================================================================
@@ -154,6 +153,8 @@ class BaseAD2CaptDevice(cmp.CProcessControl):
 
     def on_open_device_finished(self, device_handle: int):
         self.logger.info(f"Opening device finished with handle {device_handle}")
+        self.start_capturing_process(self.model.capturing_information.sample_rate,
+                                     self.model.analog_in.selected_ain_channel)
 
     def close_device(self):
         pass
@@ -167,9 +168,13 @@ class BaseAD2CaptDevice(cmp.CProcessControl):
         :param ain_channel:
         :return:
         """
+        self.kill_capture_flag.value = int(False)
         self.streaming_dqueue = deque(maxlen=self.model.capturing_information.streaming_deque_length)
         self.thread_manager.start(self.qt_consume_data)
         self.thread_manager.start(self.qt_stream_data)
+
+    def stop_capturing_process(self):
+        self.kill_capture_flag.value = int(True)
 
     def _on_streaming_history_changed(self, history: float):
         self.streaming_dqueue = deque(maxlen=self.model.capturing_information.streaming_deque_length)
@@ -192,8 +197,6 @@ class BaseAD2CaptDevice(cmp.CProcessControl):
 
     def on_discovered_devices_changed(self, devices: list):
         self.model.device_information.connected_devices = devices
-
-
 
     def _on_selected_device_index_changed(self, index):
         self.model.device_information.selected_device_index = index
@@ -268,8 +271,6 @@ class BaseAD2CaptDevice(cmp.CProcessControl):
             self.stop_capture()
             self.model.capturing_information.recorded_samples = []
         self.model.measurement_time = 0
-
-
 
     # ==================================================================================================================
     def start_device_process(self):

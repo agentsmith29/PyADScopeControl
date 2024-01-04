@@ -282,7 +282,7 @@ class MPCaptDevice(cmp.CProcess, ):
         self.logger.info(f"[Task] Closing device...")
         self.dwf.FDwfDeviceClose(self.hdwf)
         self.hdwf.value = 0
-        self._connected = self.connected()
+        self.connected = False
         self.logger.info(f"[Task] Device closed.")
 
     # ==================================================================================================================
