@@ -41,6 +41,7 @@ class BaseAD2CaptDevice(cmp.CProcessControl):
     device_state_changed = Signal(AD2Constants.DeviceState, name="device_state_changed")
 
     capture_process_state_changed = Signal(AD2Constants.CapturingState, name="capture_process_state_changed")
+    ready_for_recording_changed = Signal(bool, name="ready_for_recording_changed")
 
     def __init__(self, ad2capt_model: AD2CaptDeviceModel, start_capture_flag: Value):
         super().__init__(
@@ -113,6 +114,9 @@ class BaseAD2CaptDevice(cmp.CProcessControl):
             lambda x: type(self.model.device_information).device_state.fset(self.model.device_information, x))
         self.capture_process_state_changed.connect(
             lambda x: type(self.model.capturing_information).device_capturing_state.fset(
+                self.model.capturing_information, x))
+        self.ready_for_recording_changed.connect(
+            lambda x: type(self.model.capturing_information).ready_for_recording.fset(
                 self.model.capturing_information, x))
 
         self.open_device_finished.connect(self.on_open_device_finished)

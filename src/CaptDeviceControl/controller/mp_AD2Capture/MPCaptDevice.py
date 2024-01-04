@@ -167,6 +167,13 @@ class MPCaptDevice(cmp.CProcess, ):
         self.ain_buffer_size = self.get_ain_buffer_size(self._selected_device_index)
 
 
+    @CProperty
+    def ready_for_recording(self):
+        return self._ready_for_recording
+
+    @ready_for_recording.setter(emit_to='ready_for_recording_changed')
+    def ready_for_recording(self, value: bool):
+        self._ready_for_recording = value
     # ==================================================================================================================
     #
     # ==================================================================================================================

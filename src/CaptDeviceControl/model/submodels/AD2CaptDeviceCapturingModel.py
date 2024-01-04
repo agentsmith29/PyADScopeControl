@@ -10,6 +10,7 @@ class AD2CaptDeviceCapturingSignals(QObject):
     def __init__(self, parent=None):
         super().__init__(parent)
 
+
     # Acquisition Settings
     sample_rate_changed = Signal(int)
     streaming_rate_changed = Signal(int)
@@ -27,6 +28,7 @@ class AD2CaptDeviceCapturingSignals(QObject):
 
     # Recording Flags (starting, stopping and pausing)
     device_capturing_state_changed = Signal(AD2Constants.CapturingState)
+    ready_for_recording_changed = Signal(bool)
     start_recording_changed = Signal(bool)
     stop_recording_changed = Signal(bool)
     reset_recording_changed = Signal(bool)
@@ -57,6 +59,7 @@ class AD2CaptDeviceCapturingModel:
 
         # Recording Flags (starting, stopping and pausing)
         self._device_capturing_state: AD2Constants.CapturingState = AD2Constants.CapturingState.STOPPED()
+        self._ready_for_recording: bool = False
         self._start_recording = False
         self._stop_recording = True
         self._reset_recording = True
@@ -134,6 +137,14 @@ class AD2CaptDeviceCapturingModel:
         self._device_capturing_state = value
         self.signals.device_capturing_state_changed.emit(self.device_capturing_state)
 
+    @property
+    def ready_for_recording(self) -> bool:
+        return self._ready_for_recording
+
+    @ready_for_recording.setter
+    def ready_for_recording(self, value: bool):
+        self._ready_for_recording = value
+        self.signals.ready_for_recording_changed.emit(self.ready_for_recording)
     @property
     def start_recording(self) -> bool:
         print(f">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> {self._start_recording}")
