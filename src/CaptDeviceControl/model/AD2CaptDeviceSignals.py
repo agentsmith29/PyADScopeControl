@@ -9,6 +9,7 @@ from PySide6.QtCore import QObject, Signal
 from CaptDeviceConfig import CaptDeviceConfig as Config
 from CaptDeviceControl.controller.DeviceInformation.HWDeviceInformation import HWDeviceInformation
 
+
 class AD2CaptDeviceSignals(QObject):
     def __init__(self, parent=None):
         super().__init__(parent)

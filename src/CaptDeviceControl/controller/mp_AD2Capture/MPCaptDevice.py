@@ -1,17 +1,16 @@
-import ctypes
-import os
+import sys
 import sys
 import time
-from ctypes import c_int, c_int32, byref, create_string_buffer, cdll, c_double, c_byte, CDLL
+from ctypes import c_int, c_int32, byref, create_string_buffer, cdll, c_double, c_byte
 from multiprocessing import Queue, Value
 
 import cmp
 import numpy as np
 from cmp.CProperty import CProperty
 
+from CaptDeviceControl.model.AD2Constants import AD2Constants
 from constants.dwfconstants import enumfilterType, enumfilterDemo, enumfilterUSB, acqmodeRecord, DwfStateConfig, \
     DwfStatePrefill, DwfStateArmed
-from CaptDeviceControl.model.AD2Constants import AD2Constants
 
 
 class MPCaptDevice(cmp.CProcess, ):

@@ -4,7 +4,7 @@ Author(s): Christoph Schmidt <christoph.schmidt@tugraz.at>
 Created: 2023-10-19 12:35
 Package Version: 
 """
-from ctypes import c_int, create_string_buffer, CDLL, byref
+from ctypes import CDLL
 
 from controller.DeviceInformation.WaveFormsAPI import WFAPIDeviceEnumeration, WFAPIDeviceControl, WFAPIChannels
 from controller.DeviceInformation.dataclasses.AnalogInChannelInfo import AnalogInChannelInfo, AnalogInChannelRetriever

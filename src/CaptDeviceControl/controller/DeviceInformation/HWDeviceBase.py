@@ -4,9 +4,7 @@ Author(s): Christoph Schmidt <christoph.schmidt@tugraz.at>
 Created: 2023-10-19 12:35
 Package Version: 
 """
-from ctypes import CDLL, c_int, create_string_buffer, c_int32, byref
-
-from constants.dwfconstants import enumfilterType, enumfilterUSB, enumfilterDemo
+from ctypes import CDLL, c_int, create_string_buffer
 
 
 class HWDeviceBase:

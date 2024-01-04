@@ -1,9 +1,9 @@
-from ctypes import c_int, Array
+from ctypes import Array
 
 from PySide6.QtCore import QObject, Signal
 
-from CaptDeviceControl.model.AD2Constants import AD2Constants
 from CaptDeviceControl.CaptDeviceConfig import CaptDeviceConfig as Config
+from CaptDeviceControl.model.AD2Constants import AD2Constants
 from CaptDeviceControl.model.submodels.AD2CaptDeviceAnalogInModel import AD2CaptDeviceAnalogInModel
 from CaptDeviceControl.model.submodels.AD2CaptDeviceCapturingModel import AD2CaptDeviceCapturingModel
 from CaptDeviceControl.model.submodels.AD2CaptDeviceInformationModel import AD2CaptDeviceInformationModel

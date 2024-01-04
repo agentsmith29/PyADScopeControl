@@ -1,5 +1,3 @@
-from ctypes import c_int, Array
-
 from PySide6.QtCore import QObject, Signal
 
 from CaptDeviceConfig import CaptDeviceConfig

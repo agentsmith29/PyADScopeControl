@@ -1,13 +1,11 @@
-import logging
 import os
 
 import cmp
 from PySide6.QtCore import Signal
 
-
-from CaptDeviceControl.model.AD2CaptDeviceModel import AD2CaptDeviceSignals, AD2CaptDeviceModel
-from CaptDeviceControl.model.AD2Constants import AD2Constants
 from CaptDeviceControl.controller.mp_AD2Capture.MPCaptDevice import MPCaptDevice
+from CaptDeviceControl.model.AD2CaptDeviceModel import AD2CaptDeviceModel
+from CaptDeviceControl.model.AD2Constants import AD2Constants
 
 
 class MPCaptDeviceControl(cmp.CProcessControl):

@@ -1,15 +1,11 @@
 import logging
 import os
-from collections import deque
 
 import numpy as np
-
+import pyqtgraph as pg
 from PySide6.QtCore import QTimer
-from PySide6.QtGui import QStandardItemModel, QStandardItem
 from PySide6.QtWidgets import QMainWindow, QStatusBar
 from pyqtgraph.dockarea import DockArea, Dock
-
-import pyqtgraph as pg
 from rich.logging import RichHandler
 
 from CaptDeviceControl.controller.BaseAD2CaptDevice import BaseAD2CaptDevice
@@ -17,7 +13,6 @@ from CaptDeviceControl.model.AD2CaptDeviceModel import AD2CaptDeviceModel
 from CaptDeviceControl.model.AD2Constants import AD2Constants
 from CaptDeviceControl.view.Ui_AD2ControlWindowNew import Ui_AD2ControlWindowNew
 from CaptDeviceControl.view.widget.WidgetCapturingInformation import WidgetCapturingInformation, WidgetDeviceInformation
-from CaptDeviceControl.model.submodels.AD2CaptDeviceAnalogInModel import AD2CaptDeviceAnalogInModel
 
 
 class ControlWindow(QMainWindow):

@@ -1,21 +1,16 @@
 import logging
-import os
-import sys
 import time
 from abc import abstractmethod
 from collections import deque
+from multiprocessing import Queue, Value, Lock
 
 import cmp
-from PySide6.QtCore import QObject, QThreadPool, Signal
-from multiprocessing import Process, Queue, Value, Lock
+from PySide6.QtCore import QThreadPool, Signal
 from numpy import ndarray
-from rich.logging import RichHandler
 
-from CaptDeviceControl.model.AD2CaptDeviceModel import AD2CaptDeviceModel, AD2CaptDeviceSignals
-from CaptDeviceControl.model.AD2Constants import AD2Constants
-
-from CaptDeviceControl.controller.mp_AD2Capture.MPCaptDeviceControl import MPCaptDeviceControl
 from CaptDeviceControl.controller.mp_AD2Capture.MPCaptDevice import MPCaptDevice
+from CaptDeviceControl.model.AD2CaptDeviceModel import AD2CaptDeviceModel
+from CaptDeviceControl.model.AD2Constants import AD2Constants
 
 
 class BaseAD2CaptDevice(cmp.CProcessControl):

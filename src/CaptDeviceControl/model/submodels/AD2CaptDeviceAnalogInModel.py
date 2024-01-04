@@ -1,7 +1,10 @@
 from ctypes import c_int, c_byte
 
 from PySide6.QtCore import QObject, Signal
+
 from CaptDeviceControl.CaptDeviceConfig import CaptDeviceConfig
+
+
 class AD2CaptDeviceAnalogInSignals(QObject):
     def __init__(self, parent=None):
         super().__init__(parent)

@@ -4,10 +4,9 @@ Author(s): Christoph Schmidt <christoph.schmidt@tugraz.at>
 Created: 2023-10-19 12:35
 Package Version: 
 """
-from ctypes import CDLL, c_int, byref, c_double
+from ctypes import CDLL, c_int
 from dataclasses import dataclass
 
-from controller.DeviceInformation.HWDeviceBase import HWDeviceBase
 from controller.DeviceInformation.WaveFormsAPI import WFAPIChannels
 
 

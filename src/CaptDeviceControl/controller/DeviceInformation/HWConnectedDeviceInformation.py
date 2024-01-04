@@ -6,8 +6,8 @@ Package Version:
 """
 from ctypes import CDLL
 
-from controller.DeviceInformation.dataclasses.AnalogInChannelInfo import AnalogInChannels
 from controller.DeviceInformation.AnalogOutChannel import AnalogOutChannels
+from controller.DeviceInformation.dataclasses.AnalogInChannelInfo import AnalogInChannels
 
 
 class HWConnectedDeviceInformation:

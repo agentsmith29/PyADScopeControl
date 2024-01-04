@@ -6,7 +6,6 @@ Package Version:
 """
 import logging
 import sys
-from abc import abstractmethod
 from ctypes import c_int, byref, c_double, CDLL, create_string_buffer, cdll, c_int32
 
 from constants.dwfconstants import enumfilterType, enumfilterDemo, enumfilterUSB
