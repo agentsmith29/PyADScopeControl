@@ -21,7 +21,7 @@ from PySide6.QtWidgets import (QApplication, QComboBox, QFrame, QGridLayout,
     QSpinBox, QStatusBar, QVBoxLayout, QWidget)
 
 from fswidgets import PlayPushButton
-import resources_rc
+from . import resources_rc
 
 class Ui_AD2ControlWindow(object):
     def setupUi(self, AD2ControlWindow):

@@ -19,7 +19,7 @@ from PySide6.QtWidgets import (QApplication, QComboBox, QFormLayout, QFrame,
     QGridLayout, QHBoxLayout, QLabel, QLayout,
     QMainWindow, QMenuBar, QPushButton, QSizePolicy,
     QSpinBox, QToolButton, QWidget)
-import resources_rc
+from . import resources_rc
 
 class Ui_AD2ControlWindowNew(object):
     def setupUi(self, AD2ControlWindowNew):
