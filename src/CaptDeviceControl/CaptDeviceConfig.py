@@ -12,7 +12,7 @@ import confighandler as cfg
 class CaptDeviceConfig(cfg.ConfigNode):
 
     def __init__(self) -> None:
-        super().__init__(internal_log=True, internal_log_level=logging.DEBUG)
+        super().__init__(internal_log=False, internal_log_level=logging.DEBUG)
         self.selected_device_index = cfg.Field(0, friendly_name="Selected device",
                                          description="Selected device from the device list provided by the DreamWaves API.")
 

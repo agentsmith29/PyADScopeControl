@@ -69,7 +69,6 @@ class AD2CaptDeviceInformationModel:
 
     @selected_device_index.setter
     def selected_device_index(self, value: int):
-        print("selected_device_index", value)
         self._config.selected_device_index.set(value)
         self.signals.selected_device_index_changed.emit(self.selected_device_index)
 

@@ -29,6 +29,7 @@ class BaseAD2CaptDevice(cmp.CProcessControl):
 
     ain_channels_changed = Signal(list, name="ain_channels_changed")
     selected_ain_channel_changed = Signal(int, name="selected_ain_channel_changed")
+    sample_rate_changed = Signal(float, name="sample_rate_changed")
     ain_buffer_size_changed = Signal(int, name="ain_buffer_size_changed")
     analog_in_bits_changed = Signal(int, name="analog_in_bits_changed")
     analog_in_buffer_size_changed = Signal(int, name="analog_in_buffer_size_changed")
@@ -43,10 +44,9 @@ class BaseAD2CaptDevice(cmp.CProcessControl):
     capture_process_state_changed = Signal(AD2Constants.CapturingState, name="capture_process_state_changed")
     ready_for_recording_changed = Signal(bool, name="ready_for_recording_changed")
 
-    def __init__(self, ad2capt_model: AD2CaptDeviceModel, start_capture_flag: Value):
-        super().__init__(
-            internal_log=True,
-            internal_log_level=logging.DEBUG)
+    def __init__(self, ad2capt_model: AD2CaptDeviceModel, start_capture_flag: Value,
+                 internal_log=True, internal_log_level=logging.WARNING, log_file=None):
+        super().__init__(internal_log=internal_log, internal_log_level=internal_log_level, log_file=log_file)
 
         self.model = ad2capt_model
 
@@ -75,12 +75,17 @@ class BaseAD2CaptDevice(cmp.CProcessControl):
             self.start_capture_flag,
             self.kill_capture_flag
         )
+        self.logger.setLevel(logging.INFO)
+        self.set_child_log_level(logging.INFO)
+
         self.connect_signals()
         self._connect_config_signals()
 
         self.discover_connected_devices()
 
         self.selected_ain_channel = self.model.analog_in.selected_ain_channel
+
+
 
     def connect_signals(self):
         self.dwf_version_changed.connect(self._on_dwf_version_changed)
@@ -188,6 +193,7 @@ class BaseAD2CaptDevice(cmp.CProcessControl):
     # DWF Version
     # ==================================================================================================================
     def _on_dwf_version_changed(self, version):
+        self.logger.info(f"DWF Version returned: {version}")
         self.model.dwf_version = version
 
     # ==================================================================================================================
@@ -200,7 +206,10 @@ class BaseAD2CaptDevice(cmp.CProcessControl):
             :return:
         """
 
+
     def on_discovered_devices_changed(self, devices: list):
+        self.logger.info(f"Discovered devices: {len(devices)}")
+        self.logger.debug(f"Discovered devices: {devices}")
         self.model.device_information.connected_devices = devices
 
     def _on_selected_device_index_changed(self, index):

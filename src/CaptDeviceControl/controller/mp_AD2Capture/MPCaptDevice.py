@@ -33,11 +33,11 @@ class MPCaptDevice(cmp.CProcess, ):
                  start_capture_flag: Value,
                  kill_capture_flag: Value,
                  kill_flag: Value,
-                 internal_log, internal_log_level):
+                 internal_log, internal_log_level, log_file):
         super().__init__(state_queue, cmd_queue,
                          kill_flag=kill_flag,
                          internal_log=internal_log,
-                         internal_log_level=internal_log_level)
+                         internal_log_level=internal_log_level, log_file=log_file)
 
         # Objects for data exchange
         self.start_capture_flag: Value = start_capture_flag
@@ -124,7 +124,6 @@ class MPCaptDevice(cmp.CProcess, ):
 
     @ain_channels.setter(emit_to='ain_channels_changed')
     def ain_channels(self, value):
-        self.logger.info("Setting ain channels.")
         self._ain_channels = value
 
     @CProperty
@@ -203,7 +202,8 @@ class MPCaptDevice(cmp.CProcess, ):
     # Device Enumeration without connecting to the device
     # ==================================================================================================================
     @cmp.CProcess.register_signal()
-    def discover_connected_devices(self):
+    def discover_connected_devices(self, filter_type: int = enumfilterType.value | enumfilterDemo.value | enumfilterUSB.value):
+
 
         self.logger.info(f"Discovering connected devices...")
         # enumerate connected devices
@@ -215,22 +215,24 @@ class MPCaptDevice(cmp.CProcess, ):
         #                     (c_int32(enumfilterType.value | enumfilterAudio.value), 'Audio'),
         #                     (c_int32(enumfilterType.value | enumfilterDemo.value), 'Demo')]:
         cDevice = c_int()
-        filter, type = (c_int32(enumfilterType.value | enumfilterDemo.value | enumfilterUSB.value), 'USB')
+        filter, type = (c_int32(filter_type), 'USB')
         # filter, type = (c_int32(enumfilterType.value | enumfilterDemo.value), 'DEMO')
-        self.logger.debug(f"Filtering {type} devices...")
+        self.logger.debug(f"Filter has been used: {hex(int(filter_type))}")
         self.dwf.FDwfEnum(filter, byref(cDevice))
 
-        self.logger.debug(f"Found {cDevice.value} {type} devices.")
-
         for iDevice in range(0, cDevice.value):
+            if self.get_device_serial_number(iDevice) == "DEMO":
+                _type = "DEMO"
+            else:
+                _type = type
             connected_devices.append({
-                'type': type,
+                'type': _type,
                 'device_id': int(iDevice),
                 'device_name': self.get_device_name(iDevice),
                 'serial_number': self.get_device_serial_number(iDevice)
             })
             # _mp_log_debug(f"Found {type} device: {devicename.value.decode('UTF-8')} ({serialnum.value.decode('UTF-8')})")
-        self.logger.info(f"Found {len(connected_devices)} devices.")
+        self.logger.debug(f"Found {len(connected_devices)} devices.")
         return connected_devices
     # ==================================================================================================================
     # Settings from process Control
@@ -287,7 +289,7 @@ class MPCaptDevice(cmp.CProcess, ):
 
     def close_device(self):
         # self.dwf.FDwfAnalogOutReset(self.hdwf, c_int(channel))
-        self.logger.info(f"[Task] Closing device...")
+        self.logger.debug(f"[Task] Closing device...")
         self.dwf.FDwfDeviceClose(self.hdwf)
         self.hdwf.value = 0
         self.connected = False
@@ -297,17 +299,21 @@ class MPCaptDevice(cmp.CProcess, ):
     # Device Information
     # ==================================================================================================================
     def get_ain_channels(self) -> list:
-        cInfo = c_int()
-        self.dwf.FDwfEnumConfigInfo(c_int(self.selected_device_index), c_int(1), byref(cInfo))
-        ain_channels = cInfo.value
-        if ain_channels == 0:
+        #self.logger.debug(f"Reading available analog input channels for device {self.selected_device_index}.")
+        #cInfo = c_int()
+        #print(f">>> {cInfo}")
+        #self.dwf.FDwfEnumConfigInfo(c_int(self.selected_device_index), c_int(1), byref(cInfo))
+        #print(f">>><<<< {cInfo}")
+        #self.ain_channels = cInfo.value
+        #if self.ain_channels == 0:
             # Sometimes, the device reports a wrong number of ain channels
             # so we can try to connect to the device first and retrieve the information
-            self.open_device(self.selected_device_index)
-            ain_channels = self.analog_in_channels_count()
-            self.close_device()
-        self.logger.debug(f"Device {self.selected_device_index} has {ain_channels} analog input channels.")
-        return list(range(0, ain_channels))
+        self.open_device()
+        self.ain_channels = self.analog_in_channels_count()
+        self.close_device()
+        self.logger.info(f"Device {self.device_name} (#{self.selected_device_index}, SNR: {self.device_serial_number}) "
+                          f"AIn: {self.ain_channels}")
+        return list(range(0, self.ain_channels))
 
     def get_ain_buffer_size(self, device_id) -> int:
         cInfo = c_int()
@@ -355,7 +361,8 @@ class MPCaptDevice(cmp.CProcess, ):
         Calls WaveForms API Function 'FDwfAnalogInChannelCount(HDWF hdwf, int *pcChannel)'
         :return: The number of analog in channels.
         """
-        if self.connected():
+        if self.device_connected():
+            self.logger.debug(f"Reading AnalogIn Channel Count from device {self._device_name}")
             try:
                 int0 = c_int()
                 self.dwf.FDwfAnalogInChannelCount(self.hdwf, byref(int0))

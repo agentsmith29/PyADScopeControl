@@ -38,7 +38,7 @@ if __name__ == "__main__":
 
 
     model = CaptDevice.Model(conf)
-    controller = CaptDevice.Controller(model, None)
+    controller = CaptDevice.Controller(model, None, log_file="log.log")
     window = CaptDevice.View(model, controller)
 
     window.show()

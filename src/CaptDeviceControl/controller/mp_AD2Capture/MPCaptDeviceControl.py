@@ -7,6 +7,8 @@ from PySide6.QtCore import Signal
 
 from CaptDeviceControl.model.AD2CaptDeviceModel import AD2CaptDeviceSignals, AD2CaptDeviceModel
 from CaptDeviceControl.model.AD2Constants import AD2Constants
+from CaptDeviceControl.controller.mp_AD2Capture.MPCaptDevice import MPCaptDevice
+
 
 class MPCaptDeviceControl(cmp.CProcessControl):
 
@@ -36,9 +38,9 @@ class MPCaptDeviceControl(cmp.CProcessControl):
                  capturing_data_queue,
                  start_capture_flag,
                  kill_capture_flag,
-                 parent=None,
-                 internal_log=True,
-                 internal_log_level=logging.DEBUG):
+                 internal_log,
+                 internal_log_level,
+                 parent=None):
         super().__init__(parent,
                          internal_log=internal_log,
                          internal_log_level=internal_log_level)
