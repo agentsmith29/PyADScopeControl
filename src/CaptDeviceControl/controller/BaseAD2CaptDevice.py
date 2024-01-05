@@ -39,9 +39,8 @@ class BaseAD2CaptDevice(cmp.CProcessControl):
     capture_process_state_changed = Signal(AD2Constants.CapturingState, name="capture_process_state_changed")
     ready_for_recording_changed = Signal(bool, name="ready_for_recording_changed")
 
-    def __init__(self, ad2capt_model: AD2CaptDeviceModel, start_capture_flag: Value,
-                 internal_log=True, internal_log_level=logging.WARNING, log_file=None):
-        super().__init__(internal_log=internal_log, internal_log_level=internal_log_level, log_file=log_file)
+    def __init__(self, ad2capt_model: AD2CaptDeviceModel, start_capture_flag: Value):
+        super().__init__()
 
         self.model = ad2capt_model
 

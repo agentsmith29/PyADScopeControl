@@ -29,16 +29,17 @@ if __name__ == "__main__":
         )
 
 
-    #setup_logging()
+    setup_logging()
     app = QApplication()
 
 
     conf = CaptDevice.Config()
     conf.load("CaptDeviceConfig.yaml")
+    conf.internal_log_enabled = False
 
 
     model = CaptDevice.Model(conf)
-    controller = CaptDevice.Controller(model, None, log_file="log.log")
+    controller = CaptDevice.Controller(model, None)
     window = CaptDevice.View(model, controller)
 
     window.show()
