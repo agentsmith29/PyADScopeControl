@@ -16,7 +16,7 @@ from constants.dwfconstants import enumfilterType, enumfilterDemo, enumfilterUSB
 class MPCaptDevice(cmp.CProcess, ):
 
 
-    @staticmethod
+    #@staticmethod
     def timeit(func):
         def wrapper(self, *args, **kwargs):
             time_start = time.time()
