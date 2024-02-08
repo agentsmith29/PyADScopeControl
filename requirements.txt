@@ -7,9 +7,9 @@ rich
 pyqtgraph
 
 # add the git repo
-git+https://gitlab.tugraz.at/flexsensor-public/modules/fswidgets.git@develop
-git+https://gitlab.tugraz.at/flexsensor-public/modules/confighandler.git@develop
-git+https://gitlab.tugraz.at/flexsensor-public/modules/cmp.git@develop
+git+https://github.com/agentsmith29/fstools.fswidgets.git@develop
+git+https://github.com/agentsmith29/fstools.confighandler.git@develop
+git+https://github.com/agentsmith29/fstools.cmp.git@develop
 
 # Local installs
 #../tools/confighandler

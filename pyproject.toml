@@ -15,9 +15,9 @@ dependencies = [
     'scipy',
     'rich',
     'pyqtgraph',
-    'fswidgets@git+https://gitlab.tugraz.at/flexsensor-public/modules/fswidgets.git@develop',
-    'confighandler@git+https://gitlab.tugraz.at/flexsensor-public/modules/confighandler.git@develop',
-    'cmp@git+https://gitlab.tugraz.at/flexsensor-public/modules/cmp.git@develop'
+    'fswidgets@git+https://github.com/agentsmith29/fstools.fswidgets.git@develop',
+    'confighandler@git+https://github.com/agentsmith29/fstools.confighandler.git@develop',
+    'cmp@git+https://github.com/agentsmith29/fstools.cmp.git@develop'
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
