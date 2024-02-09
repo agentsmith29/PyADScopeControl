@@ -47,7 +47,7 @@ class AD2CaptDeviceInformationModel:
         return self._num_of_connected_devices
 
     @num_of_connected_devices.setter
-    def num_of_connected_devices(self, value: c_int | int):
+    def num_of_connected_devices(self, value: c_int or int):
         if isinstance(value, c_int):
             self._num_of_connected_devices = int(value.value)
         else:
@@ -89,7 +89,7 @@ class AD2CaptDeviceInformationModel:
         return self._device_name
 
     @device_name.setter
-    def device_name(self, value: Array | str):
+    def device_name(self, value: Array or str):
         if not isinstance(value, str):
             self._device_name = str(value.value.decode('UTF-8'))
         else:
@@ -101,7 +101,7 @@ class AD2CaptDeviceInformationModel:
         return self._device_serial_number
 
     @device_serial_number.setter
-    def device_serial_number(self, value: Array | str):
+    def device_serial_number(self, value: Array or str):
         if not isinstance(value, str):
             self._device_serial_number = str(value.value.decode('UTF-8'))
         else:
@@ -115,7 +115,7 @@ class AD2CaptDeviceInformationModel:
         return self._device_index
 
     @device_index.setter
-    def device_index(self, value: c_int | int):
+    def device_index(self, value: c_int or int):
         if isinstance(value, c_int):
             self._device_index = int(value.value)
         else:

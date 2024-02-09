@@ -40,7 +40,7 @@ class AD2CaptDeviceAnalogInModel:
         return self.config.ain_channel.get()
 
     @selected_ain_channel.setter
-    def selected_ain_channel(self, value: int | c_int):
+    def selected_ain_channel(self, value: int or c_int):
         if isinstance(value, c_int):
             value = int(value.value)
         else:
@@ -81,7 +81,7 @@ class AD2CaptDeviceAnalogInModel:
         return self._ain_device_state
 
     @ain_device_state.setter
-    def ain_device_state(self, value: c_int | int | c_byte):
+    def ain_device_state(self, value: c_int or int or c_byte):
         if isinstance(value, c_int) or isinstance(value, c_byte):
             self._ain_device_state = int(value.value)
         else:
