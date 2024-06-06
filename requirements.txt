@@ -8,8 +8,8 @@ pyqtgraph
 
 # add the git repo
 git+https://github.com/agentsmith29/fstools.fswidgets.git@develop
-git+https://github.com/agentsmith29/fstools.confighandler.git@1.2.2
-git+https://github.com/agentsmith29/fstools.cmp.git@1.0.1
+git+https://github.com/agentsmith29/fstools.confighandler.git@develop
+git+https://github.com/agentsmith29/fstools.cmp.git@develop
 
 # Local installs
 #../tools/confighandler
