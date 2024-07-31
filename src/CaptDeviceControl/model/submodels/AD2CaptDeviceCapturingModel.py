@@ -1,3 +1,4 @@
+import pandas as pd
 from PySide6.QtCore import QObject, Signal
 
 from CaptDeviceConfig import CaptDeviceConfig
@@ -40,6 +41,8 @@ class AD2CaptDeviceCapturingModel:
         # Acquired Signal Information
         # The number of recorded samples
         self._recorded_samples: list = []
+        self.recorded_samples_preview: list = []
+        self._recorded_samples_df: pd.DataFrame = None
         # The length of the recording
         self._recording_time: float = 0
 
@@ -75,6 +78,15 @@ class AD2CaptDeviceCapturingModel:
         self.samples_captured = len(self._recorded_samples)
         # self.signals.num_of_current_recorded_samples_changed.emit(self.num_of_current_recorded_samples)
         self.signals.recorded_samples_changed.emit(self.recorded_samples)
+
+    @property
+    def recorded_samples_df(self) -> list:
+        return self._recorded_samples_df
+
+    @recorded_samples_df.setter
+    def recorded_samples_df(self, value: pd.DataFrame):
+        self._recorded_samples_df = value
+
 
     @property
     def recording_time(self) -> float:

@@ -1,5 +1,6 @@
 import logging
 import os
+import time
 
 import numpy as np
 import pyqtgraph as pg
@@ -18,6 +19,7 @@ from CaptDeviceControl.view.widget.WidgetCapturingInformation import WidgetCaptu
 import pandas as pd
 from pandasgui import show as pdview
 
+
 class ControlWindow(QMainWindow):
 
     def __init__(self, model: AD2CaptDeviceModel, controller: BaseAD2CaptDevice):
@@ -35,7 +37,6 @@ class ControlWindow(QMainWindow):
         self._ui = Ui_AD2ControlWindowNew()
         self._ui.setupUi(self)
         self._init_menu_bar()
-
 
         self.capt_info = WidgetCapturingInformation()
         self.dev_info = WidgetDeviceInformation()
@@ -58,13 +59,16 @@ class ControlWindow(QMainWindow):
         self.stream_update_timer.setInterval(40)
         self.stream_update_timer.timeout.connect(self._on_stream_update_timer_timeout)
 
+        self.autostop_capture = QTimer()
+        self.autostop_capture.setInterval(1000)
+        self.autostop_capture.timeout.connect(self.stop_capture_by_timer)
+
         # Connect the signals and controls
         self._connect_config_properties()
         self._connect_controls()
         self._connect_signals()
         # self._init_other_ui_elements()
         # self._ui.cb_duration_streaming_history.setCurrentIndex(5)
-
 
         self._ui.sb_acquisition_rate.setValue(self.model.capturing_information.sample_rate)
         # self._ui.cb_duration_streaming_history.set(self.model.capturing_information.streaming_history)
@@ -92,19 +96,12 @@ class ControlWindow(QMainWindow):
         self.act_exit.setShortcut('Ctrl+Q')
         self.file_menu.addAction(self.act_exit)
 
-
         self._ui.menu_file.setMenu(self.file_menu)
         self._ui.menu_file.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
 
-
     def view_data(self):
-        # Convert the data to a pandas dataframe
-        self.captured_data = pd.DataFrame(self.model.capturing_information.recorded_samples,
-                                          columns=['Amplitude'])
-        # Add a header
-
-        pdview(self.captured_data)
-
+        self.controller.create_dataframe()
+        pdview(self.model.capturing_information.recorded_samples_df)
 
     def _init_UI_live_plot(self):
         area = DockArea()
@@ -125,6 +122,7 @@ class ControlWindow(QMainWindow):
         d2.addWidget(self.scope_captured)
 
         return area
+
     # ==================================================================================================================
     #
     # ==================================================================================================================
@@ -154,7 +152,6 @@ class ControlWindow(QMainWindow):
         )
         self._ui.btn_stop.clicked.connect(self.controller.stop_capturing_process)
 
-
         self._ui.btn_record.clicked.connect(self._ui_on_btn_recording_clicked)
         self._ui.btn_reset.clicked.connect(self._ui_on_btn_reset_clicked)
 
@@ -175,12 +172,12 @@ class ControlWindow(QMainWindow):
         self.model.device_information.signals.device_name_changed.connect(self._on_device_name_changed)
         self.model.device_information.signals.device_serial_number_changed.connect(
             self._on_device_serial_number_changed)
-        self.model.capturing_information.signals.ready_for_recording_changed.connect(self._on_ready_for_recording_changed)
+        self.model.capturing_information.signals.ready_for_recording_changed.connect(
+            self._on_ready_for_recording_changed)
 
     # ==================================================================================================================
     # Slots
     # ==================================================================================================================
-
 
     def _on_dwf_version_changed(self, dwf_version):
         """
@@ -247,7 +244,6 @@ class ControlWindow(QMainWindow):
         except Exception as e:
             self.logger.error(f"Error: {e}")
 
-
     def _on_ui_sample_rate_changed(self, sample_rate: int):
         self.model.sample_rate = sample_rate
 
@@ -255,13 +251,29 @@ class ControlWindow(QMainWindow):
         self._ui.sb_acquisition_rate.setRange(1, 1e9)
         self._ui.sb_acquisition_rate.setValue(sample_rate)
 
+    def stop_capture_by_timer(self):
+        self.autostop_capture.start()
+
+        self._ui.btn_record.setChecked(False)
+        self.controller.stop_capture()
     def _ui_on_btn_recording_clicked(self):
         if not self.model.capturing_information.device_capturing_state == AD2Constants.CapturingState.RUNNING():
+            self.capture_update_timer.setInterval(40)
             self._ui.btn_record.setChecked(True)
             self.controller.start_capture()
+            self.autostop_capture.start()
+            # spawn a qthread, that automatically stops the recording after a certain time
+            self.capture_update_timer.start()
         else:
+            self.capture_update_timer.setInterval(1000)
             self._ui.btn_record.setChecked(False)
             self.controller.stop_capture()
+
+
+            #print("Done")
+            #print(len(self.model.capturing_information.recorded_samples_preview))
+
+            #print("Stopped")
 
     def _ui_on_btn_reset_clicked(self):
         self.scope_captured.clear()
@@ -318,49 +330,32 @@ class ControlWindow(QMainWindow):
             self.capture_update_timer.stop()
             self.stream_update_timer.stop()
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     def _on_device_name_changed(self, device_name):
         self.dev_info.device_name = device_name
 
     def _on_device_serial_number_changed(self, serial_number):
         self.dev_info.serial_number = serial_number
 
-
-
-
-
     # ============== Plotting
     def _on_capture_update_plot(self):
+        # append to  self.scope_captured
+        #self.scope_captured.app
+
+        if self.controller.capture_data_queue.empty() and self.model.capturing_information.stop_recording:
+            self.model.capturing_information.recorded_samples_preview.clear()
+            for rc in self.model.capturing_information.recorded_samples:
+                self.model.capturing_information.recorded_samples_preview.append(rc)
 
         if len(self.model.capturing_information.recorded_samples) > 0:
             self.scope_captured.clear()
             # print(self.ad2device.recorded_samples)
-            d = self.model.capturing_information.recorded_samples
+            d = self.model.capturing_information.recorded_samples_preview
+
             self.scope_captured.plot(d, pen=pg.mkPen(width=1))
             # print(f"Length: {len(self.controller.recorded_sample_stream)}")
 
         #if len(self.controller.status_dqueue) > 0:
-            # print(self.controller.status_dqueue)
+        # print(self.controller.status_dqueue)
         #    self.model.samples_captured = self.controller.status_dqueue[-1]["captured"]
         # self.model.samples_lost = d[1]["lost"]
         # self.model.samples_corrupted = d[1]["corrupted"]
@@ -375,7 +370,6 @@ class ControlWindow(QMainWindow):
             pen=pg.mkPen(width=1))
         # self._ui.lcd_unconsumed_stream.display(self.model.capturing_information.unconsumed_stream_samples)
 
-
     # ============== Connected Device Information
     def _on_num_of_connected_devices_changed(self, num_of_connected_devices):
         pass
@@ -386,9 +380,6 @@ class ControlWindow(QMainWindow):
         """ Gets called if the model is changed directly (should modify the UI)"""
         self._on_selected_ain_channel_changed(channel)
         self._ui.cb_channel_select.setCurrentIndex(channel)
-
-
-
 
     # ============== Analog In Information
     def _on_ain_channels_changed(self, list_of_ad_ins):
@@ -402,22 +393,23 @@ class ControlWindow(QMainWindow):
     def _on_ain_bits_changed(self, bits):
         pass
 
+    #def _on_start_recording_changed(self, start_recording):
+    #    self.logger.debug(f"Start Recording: {start_recording}")
+    #    if start_recording:
+    #        self.capture_update_timer.start()
+    #        self._ui.btn_stop.setEnabled(True)
+    #        # self._ui.btn_start_capture.setStyleSheet(PlayPushButton.style_pause())
+    #        self._ui.btn_start_capture.pause()
+    #        self._ui.btn_start_capture.setText("Pause Capture")
 
-    def _on_start_recording_changed(self, start_recording):
-        self.logger.debug(f"Start Recording: {start_recording}")
-        if start_recording:
-            self._ui.btn_stop.setEnabled(True)
-            # self._ui.btn_start_capture.setStyleSheet(PlayPushButton.style_pause())
-            self._ui.btn_start_capture.pause()
-            self._ui.btn_start_capture.setText("Pause Capture")
-
-    def _on_stop_recording_changed(self, stop_recording):
-        self.logger.debug(f"Stop Recording: {stop_recording}")
-        if stop_recording:
-            self._ui.btn_stop.setEnabled(False)
-            # self._ui.btn_start_capture.setStyleSheet(CSSPlayPushButton.style_play())
-            self._ui.btn_start_capture.play()
-            self._ui.btn_start_capture.setText("Start Capture")
+    #def _on_stop_recording_changed(self, stop_recording):
+    #    self.logger.debug(f"Stop Recording: {stop_recording}")
+    #    if stop_recording:
+    #        self.capture_update_timer.stop()
+    #        self._ui.btn_stop.setEnabled(False)
+    #        # self._ui.btn_start_capture.setStyleSheet(CSSPlayPushButton.style_play())
+    #        self._ui.btn_start_capture.play()
+    #        self._ui.btn_start_capture.setText("Start Capture")
 
     def _on_pause_recording_changed(self, pause_recording):
         self._ui.btn_stop.setEnabled(True)
@@ -426,10 +418,6 @@ class ControlWindow(QMainWindow):
 
     def _on_reset_recording_changed(self, reset_recording):
         pass
-
-
-
-
 
     def closeEvent(self, args):
         print("Destroyed")

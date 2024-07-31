@@ -1,4 +1,5 @@
 import logging
+import math
 import time
 from abc import abstractmethod
 from collections import deque
@@ -54,6 +55,7 @@ class BaseAD2CaptDevice(cmp.CProcessControl):
         self.stream_data_queue = Queue()
         self.capture_data_queue = Queue()
 
+
         if start_capture_flag is None:
             self.start_capture_flag = Value('i', 0, lock=self.lock)
         else:
@@ -62,6 +64,7 @@ class BaseAD2CaptDevice(cmp.CProcessControl):
 
         # Number of sa
         self.streaming_dqueue: deque = None  # a dqueue, initialize later
+
 
         self.register_child_process(
             MPCaptDevice,
@@ -254,6 +257,21 @@ class BaseAD2CaptDevice(cmp.CProcessControl):
         self.model.recorded_samples = []
         self.model.recorded_sample_stream = []
 
+    def set_recorded_data_time_axis(self, func = None):
+
+        # Create a new column same as the index
+        self.model.capturing_information.recorded_samples_df['time (s)'] = (
+            self.model.capturing_information.recorded_samples_df.index.to_series().apply(
+                lambda x: x / self.model.capturing_information.sample_rate
+            )
+        )
+
+        self.model.capturing_information.recorded_samples_df['time (ms)'] = (
+            self.model.capturing_information.recorded_samples_df.index.to_series().apply(
+                lambda x: (x / self.model.capturing_information.sample_rate)*1000
+            )
+        )
+
     # def start_capture(self, clear=True):
     #    print(f"Start capture. Clear {clear}")
     #    self.start_capture_flag.value = 1
@@ -263,6 +281,14 @@ class BaseAD2CaptDevice(cmp.CProcessControl):
     #    self.model.start_recording = True
     #    self.model.stop_recording = False
     # self.model.device_capturing_state = AD2Constants.CapturingState.RUNNING()
+
+    def create_dataframe(self):
+        self.model.capturing_information.recorded_samples_df = (
+            pd.DataFrame(self.model.capturing_information.recorded_samples,
+                         columns=['Amplitude']))
+
+        self.set_recorded_data_time_axis()
+
 
     def stop_capture(self):
         self.start_capture_flag.value = 0
@@ -299,6 +325,7 @@ class BaseAD2CaptDevice(cmp.CProcessControl):
         # self.thread_manager.start(self.qt_get_state)
 
     def qt_consume_data(self):
+        itoogle = 0
         while True:
             t = time.time()
             try:
@@ -307,6 +334,13 @@ class BaseAD2CaptDevice(cmp.CProcessControl):
                     # print(f"Stream data queue size {len(stream_data)}")
                     for d in capture_data:
                         self.model.capturing_information.recorded_samples.append(d)
+
+                        if itoogle == math.ceil(self.model.capturing_information.sample_rate / 1000):
+                            self.model.capturing_information.recorded_samples_preview.append(d)
+                            itoogle = 0
+                        else:
+                            itoogle = itoogle + 1
+
                 t_end = time.time()
                 # print(f"Time to get data {t_end-t}")
             except Exception as e:
@@ -315,6 +349,7 @@ class BaseAD2CaptDevice(cmp.CProcessControl):
         self.logger.info("Streaming data consume thread ended")
 
     def qt_stream_data(self):
+        itoogle = 0
         while True:
             t = time.time()
             try:
@@ -322,7 +357,11 @@ class BaseAD2CaptDevice(cmp.CProcessControl):
                 if isinstance(stream_data, ndarray):
                     # print(f"Stream data queue size {len(stream_data)}")
                     for d in stream_data:
-                        self.streaming_dqueue.append(d)
+                        if itoogle == math.ceil(self.model.capturing_information.sample_rate/1000):
+                            self.streaming_dqueue.append(d)
+                            itoogle = 0
+                        else:
+                            itoogle = itoogle + 1
                 t_end = time.time()
                 # print(f"Time to get data {t_end-t}")
             except Exception as e:
