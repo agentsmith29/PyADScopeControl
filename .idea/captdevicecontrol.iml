@@ -10,7 +10,7 @@
       <excludeFolder url="file://$MODULE_DIR$/src/captdevicecontrol.egg-info" />
       <excludeFolder url="file://$MODULE_DIR$/.venv37" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.7 (captdevicecontrol)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 3.12 (fs.captdevicecontrol)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
   <component name="PyDocumentationSettings">

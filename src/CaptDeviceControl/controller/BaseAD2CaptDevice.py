@@ -5,6 +5,7 @@ from collections import deque
 from multiprocessing import Queue, Value, Lock
 
 import cmp
+import pandas as pd
 from PySide6.QtCore import QThreadPool, Signal
 from numpy import ndarray
 
@@ -335,6 +336,7 @@ class BaseAD2CaptDevice(cmp.CProcessControl):
                 self._set_ad2state_from_process(self.state_queue.get())
             # time.sleep(0.1)
         self.logger.info("Status data consume thread ended")
+
 
     # ==================================================================================================================
     # Destructor

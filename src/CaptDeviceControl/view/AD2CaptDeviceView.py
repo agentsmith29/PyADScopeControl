@@ -4,7 +4,8 @@ import os
 import numpy as np
 import pyqtgraph as pg
 from PySide6.QtCore import QTimer
-from PySide6.QtWidgets import QMainWindow, QStatusBar
+from PySide6.QtGui import QAction, QIcon
+from PySide6.QtWidgets import QMainWindow, QStatusBar, QMenu, QToolButton
 from pyqtgraph.dockarea import DockArea, Dock
 from rich.logging import RichHandler
 
@@ -14,6 +15,8 @@ from CaptDeviceControl.model.AD2Constants import AD2Constants
 from CaptDeviceControl.view.Ui_AD2ControlWindowNew import Ui_AD2ControlWindowNew
 from CaptDeviceControl.view.widget.WidgetCapturingInformation import WidgetCapturingInformation, WidgetDeviceInformation
 
+import pandas as pd
+from pandasgui import show as pdview
 
 class ControlWindow(QMainWindow):
 
@@ -31,6 +34,8 @@ class ControlWindow(QMainWindow):
 
         self._ui = Ui_AD2ControlWindowNew()
         self._ui.setupUi(self)
+        self._init_menu_bar()
+
 
         self.capt_info = WidgetCapturingInformation()
         self.dev_info = WidgetDeviceInformation()
@@ -67,6 +72,40 @@ class ControlWindow(QMainWindow):
     # ==================================================================================================================
     #
     # ==================================================================================================================
+    def _init_menu_bar(self):
+        # Add menu bar
+        self.file_menu = QMenu('&Files', self)
+
+        self.act_connect = QAction('Connect', self)
+        self.file_menu.addAction(self.act_connect)
+
+        self.file_menu.addSeparator()
+
+        self.act_view_data = QAction('View Data', self)
+        self.act_view_data.triggered.connect(self.view_data)
+        self.act_view_data.setShortcut('Ctrl+Alt+S')
+        self.file_menu.addAction(self.act_view_data)
+
+        self.file_menu.addSeparator()
+
+        self.act_exit = QAction('Exit', self)
+        self.act_exit.setShortcut('Ctrl+Q')
+        self.file_menu.addAction(self.act_exit)
+
+
+        self._ui.menu_file.setMenu(self.file_menu)
+        self._ui.menu_file.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+
+
+    def view_data(self):
+        # Convert the data to a pandas dataframe
+        self.captured_data = pd.DataFrame(self.model.capturing_information.recorded_samples,
+                                          columns=['Amplitude'])
+        # Add a header
+
+        pdview(self.captured_data)
+
+
     def _init_UI_live_plot(self):
         area = DockArea()
 

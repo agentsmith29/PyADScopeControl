@@ -2,7 +2,7 @@ import logging
 import sys
 import os
 
-sys.path.append('./src')
+sys.path.append('../src')
 
 from PySide6.QtWidgets import QApplication
 from rich.logging import RichHandler
@@ -34,7 +34,7 @@ if __name__ == "__main__":
 
 
     conf = CaptDevice.Config()
-    conf.load("CaptDeviceConfig.yaml")
+    #conf.load("CaptDeviceConfig.yaml")
     conf.internal_log_enabled = False
 
 

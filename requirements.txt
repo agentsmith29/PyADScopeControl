@@ -5,10 +5,11 @@ PySide6
 scipy
 rich
 pyqtgraph
+pandasgui
 
 # add the git repo
 git+https://github.com/agentsmith29/fstools.fswidgets.git@develop
-git+https://github.com/agentsmith29/fstools.confighandler.git@develop
+git+https://github.com/agentsmith29/fstools.confighandler@develop
 git+https://github.com/agentsmith29/fstools.cmp.git@develop
 
 # Local installs

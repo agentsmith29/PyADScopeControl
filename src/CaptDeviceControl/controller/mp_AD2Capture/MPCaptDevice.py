@@ -595,7 +595,7 @@ class MPCaptDevice(cmp.CProcess, ):
 
                 arr = np.array(rgd_samples, copy=True)
                 iteration_time = time.time() - time_start
-                self.stream_data_queue.put(arr)
+
 
                 if self.start_capture_flag.value == int(True):
                     if not capture_started:
@@ -617,7 +617,9 @@ class MPCaptDevice(cmp.CProcess, ):
                     self.logger.info(
                         f"Acquisition stopped after {time_captured} seconds. Captured {capture_samples} "
                         f"samples. Resulting in a time of {capture_samples / self.sample_rate} s.")
-
+                    self.stream_data_queue.put(arr)
+                else:
+                    self.stream_data_queue.put(arr)
 
 
         except Exception as e:
