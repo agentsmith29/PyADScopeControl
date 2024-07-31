@@ -16,9 +16,9 @@ dependencies = [
     'rich',
     'pyqtgraph',
     'pandasgui',
-    'fswidgets@git+https://github.com/agentsmith29/fstools.fswidgets.git@develop',
+    'fswidgets@git+https://github.com/agentsmith29/fstools.fswidgets.git@v.0.0.3.1',
     'confighandler@git+https://github.com/agentsmith29/fstools.confighandler.git@develop',
-    'cmp@git+https://github.com/agentsmith29/fstools.cmp.git@develop'
+    'cmp@git+https://github.com/agentsmith29/fstools.cmp.git@1.0.1'
 ]
 classifiers = [
     "Programming Language :: Python :: 3",

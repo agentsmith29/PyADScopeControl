@@ -71,7 +71,7 @@ class ControlWindow(QMainWindow):
         # self._ui.cb_duration_streaming_history.setCurrentIndex(5)
 
         self._ui.sb_acquisition_rate.setValue(self.model.capturing_information.sample_rate)
-        # self._ui.cb_duration_streaming_history.set(self.model.capturing_information.streaming_history)
+       # self._ui.cb_duration_streaming_history.set(self.model.capturing_information.streaming_history)
 
     # ==================================================================================================================
     #
