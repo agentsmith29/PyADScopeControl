@@ -8,9 +8,9 @@ pyqtgraph
 pandasgui
 
 # add the git repo
-git+https://github.com/agentsmith29/fstools.fswidgets.git@v.0.0.3.1
+git+https://github.com/agentsmith29/fstools.fswidgets@v.0.0.3.1
 git+https://github.com/agentsmith29/fstools.confighandler@develop
-git+https://github.com/agentsmith29/fstools.cmp.git@1.0.1
+git+https://github.com/agentsmith29/mpPy6@v6.0.0
 
 # Local installs
 #../tools/confighandler

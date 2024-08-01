@@ -5,7 +5,7 @@ from abc import abstractmethod
 from collections import deque
 from multiprocessing import Queue, Value, Lock
 
-import cmp
+import mpPy6
 import pandas as pd
 from PySide6.QtCore import QThreadPool, Signal
 from numpy import ndarray
@@ -15,7 +15,7 @@ from CaptDeviceControl.model.AD2CaptDeviceModel import AD2CaptDeviceModel
 from CaptDeviceControl.model.AD2Constants import AD2Constants
 
 
-class BaseAD2CaptDevice(cmp.CProcessControl):
+class BaseAD2CaptDevice(mpPy6.CProcessControl):
     dwf_version_changed = Signal(str, name="dwf_version_changed")
     discovered_devices_changed = Signal(list, name="discovered_devices_changed")
 
@@ -131,11 +131,11 @@ class BaseAD2CaptDevice(cmp.CProcessControl):
     # ==================================================================================================================
     #   Device control
     # ==================================================================================================================
-    @cmp.CProcessControl.register_function()
+    @mpPy6.CProcessControl.register_function()
     def set_selected_ain_channel(self, ain_channel_index: int):
         """ Sets the selected analog in channel."""
 
-    @cmp.CProcessControl.register_function()
+    @mpPy6.CProcessControl.register_function()
     def set_selected_device(self, device_index: int):
         """
         Sets the selected device index.
@@ -143,14 +143,14 @@ class BaseAD2CaptDevice(cmp.CProcessControl):
         """
         self.model.device_information.selected_device_index = device_index
 
-    @cmp.CProcessControl.register_function()
+    @mpPy6.CProcessControl.register_function()
     def set_sample_rate(self, sample_rate: float):
         """
         Sets the sample rate.
         :param sample_rate: The sample rate.
         """
 
-    @cmp.CProcessControl.register_function(open_device_finished)
+    @mpPy6.CProcessControl.register_function(open_device_finished)
     def open_device(self):
         """
         Opens the device with the given id.
@@ -168,7 +168,7 @@ class BaseAD2CaptDevice(cmp.CProcessControl):
         pass
         # self.close_device()
 
-    @cmp.CProcessControl.register_function(capture_process_state_changed)
+    @mpPy6.CProcessControl.register_function(capture_process_state_changed)
     def start_capturing_process(self):
         """
         Starts the capturing process.
@@ -197,7 +197,7 @@ class BaseAD2CaptDevice(cmp.CProcessControl):
     # ==================================================================================================================
     #   Discover connected devices
     # ==================================================================================================================
-    @cmp.CProcessControl.register_function(discovered_devices_changed)
+    @mpPy6.CProcessControl.register_function(discovered_devices_changed)
     def discover_connected_devices(self):
         """
             Discover connected devices and update the model.

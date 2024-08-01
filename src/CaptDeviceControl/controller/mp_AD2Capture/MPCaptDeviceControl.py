@@ -1,6 +1,6 @@
 import os
 
-import cmp
+import mpPy6
 from PySide6.QtCore import Signal
 
 from CaptDeviceControl.controller.mp_AD2Capture.MPCaptDevice import MPCaptDevice
@@ -8,7 +8,7 @@ from CaptDeviceControl.model.AD2CaptDeviceModel import AD2CaptDeviceModel
 from CaptDeviceControl.model.AD2Constants import AD2Constants
 
 
-class MPCaptDeviceControl(cmp.CProcessControl):
+class MPCaptDeviceControl(mpPy6.CProcessControl):
 
 
 
@@ -79,27 +79,27 @@ class MPCaptDeviceControl(cmp.CProcessControl):
         else:
             self.model.device_capturing_state = AD2Constants.CapturingState.STOPPED()
 
-    @cmp.CProcessControl.register_function(connected_devices_changed)
+    @mpPy6.CProcessControl.register_function(connected_devices_changed)
     def connected_devices(self):
         self.logger.info("Discovering connected devices.")
 
     # Setter for the selected device index
-    @cmp.CProcessControl.register_function()
+    @mpPy6.CProcessControl.register_function()
     def selected_device_index(self, device_index: int):
         self.logger.info(f"Selected device index {device_index}.")
 
-    #@cmp.CProcessControl.register_function(ain_channels_changed)
+    #@mpPy6.CProcessControl.register_function(ain_channels_changed)
     #def ain_channels(self, device_id):
     #    self.logger.info(f"Reading available analog input channels for device {device_id}.")
 
-    @cmp.CProcessControl.register_function(open_device_finished)
+    @mpPy6.CProcessControl.register_function(open_device_finished)
     def open_device(self, device_index):
         self.logger.info(f"Opening device {device_index}.")
 
-    @cmp.CProcessControl.register_function()
+    @mpPy6.CProcessControl.register_function()
     def close_device(self):
         self.logger.info(f"Closing device device.")
 
-    @cmp.CProcessControl.register_function()
+    @mpPy6.CProcessControl.register_function()
     def start_capture(self, sample_rate, ain_channel):
         print(f"Starting capture with sample rate {sample_rate} and ain channel {ain_channel}.")

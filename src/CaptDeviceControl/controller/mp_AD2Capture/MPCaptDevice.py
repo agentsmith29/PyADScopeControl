@@ -4,16 +4,16 @@ import time
 from ctypes import c_int, c_int32, byref, create_string_buffer, cdll, c_double, c_byte
 from multiprocessing import Queue, Value
 
-import cmp
+import mpPy6
 import numpy as np
-from cmp.CProperty import CProperty
+from mpPy6.CProperty import CProperty
 
 from CaptDeviceControl.model.AD2Constants import AD2Constants
 from constants.dwfconstants import enumfilterType, enumfilterDemo, enumfilterUSB, acqmodeRecord, DwfStateConfig, \
     DwfStatePrefill, DwfStateArmed
 
 
-class MPCaptDevice(cmp.CProcess, ):
+class MPCaptDevice(mpPy6.CProcess, ):
 
 
     #@staticmethod
@@ -200,7 +200,7 @@ class MPCaptDevice(cmp.CProcess, ):
     # ==================================================================================================================
     # Device Enumeration without connecting to the device
     # ==================================================================================================================
-    @cmp.CProcess.register_signal()
+    @mpPy6.CProcess.register_signal()
     def discover_connected_devices(self, filter_type: int = enumfilterType.value | enumfilterDemo.value | enumfilterUSB.value):
 
 
@@ -237,23 +237,23 @@ class MPCaptDevice(cmp.CProcess, ):
     # Settings from process Control
     # ==================================================================================================================
 
-    @cmp.CProcess.register_signal()
+    @mpPy6.CProcess.register_signal()
     def set_selected_ain_channel(self, ain_channel):
         self.selected_ain_channel = ain_channel
         #self.ain_buffer_size = self.get_ain_buffer_size(self._selected_device_index)
 
-    @cmp.CProcess.register_signal()
+    @mpPy6.CProcess.register_signal()
     def set_selected_device(self, ain_channel):
         self.selected_device_index = ain_channel
         # self.ain_buffer_size = self.get_ain_buffer_size(self._selected_device_index)
 
-    @cmp.CProcess.register_signal()
+    @mpPy6.CProcess.register_signal()
     def set_sample_rate(self, sample_rate):
         self.sample_rate = sample_rate
     # ==================================================================================================================
     # Functions for opening and closing the device
     # ==================================================================================================================
-    @cmp.CProcess.register_signal()
+    @mpPy6.CProcess.register_signal()
     def open_device(self) -> int:
         """
         Opens the device and returns the handle.
@@ -374,7 +374,7 @@ class MPCaptDevice(cmp.CProcess, ):
             self.logger.error(f"Can not read the AnalogIn Channel Count. Device not connected.")
             raise Exception(f"Can not read the AnalogIn Channel Count. Device not connected.")
 
-    @cmp.CProcess.register_signal('_changed')
+    @mpPy6.CProcess.register_signal('_changed')
     def analog_in_bits(self) -> int:
         """
         Retrieves the number bits used by the AnalogIn ADC. The oscilloscope channel settings are identical
@@ -391,7 +391,7 @@ class MPCaptDevice(cmp.CProcess, ):
             self.logger.error(f"Can not read the AnalogIn Bits. Device not connected.")
             raise Exception(f"Can not read the AnalogIn Bits. Device not connected.")
 
-    @cmp.CProcess.register_signal('_changed')
+    @mpPy6.CProcess.register_signal('_changed')
     def analog_in_buffer_size(self) -> tuple:
         """
         Returns the minimum and maximum allowable buffer sizes for the instrument. The oscilloscope
@@ -409,7 +409,7 @@ class MPCaptDevice(cmp.CProcess, ):
             self.logger.error(f"Can not read the AnalogIn Buffer Size. Device not connected.")
             raise Exception(f"Can not read the AnalogIn Buffer Size. Device not connected.")
 
-    @cmp.CProcess.register_signal('_changed')
+    @mpPy6.CProcess.register_signal('_changed')
     def analog_in_channel_range_info(self) -> tuple:
         """
         Returns the minimum and maximum range, peak to peak values, and the number of adjustable steps.
@@ -430,7 +430,7 @@ class MPCaptDevice(cmp.CProcess, ):
             self.logger.error(f"Can not read the AnalogIn Channel Range. Device not connected.")
             raise Exception(f"Can not read the AnalogIn Channel Range. Device not connected.")
 
-    @cmp.CProcess.register_signal('_changed')
+    @mpPy6.CProcess.register_signal('_changed')
     def analog_in_offset(self) -> tuple:
         """ Returns the minimum and maximum offset levels supported, and the number of adjustable steps"""
         if self.connected():
@@ -514,18 +514,18 @@ class MPCaptDevice(cmp.CProcess, ):
             raise Exception(f"Error while getting data from device: {e}")
         return ptr_rgd_samples, c_available
 
-    @cmp.CProcess.register_signal(signal_name='device_state_changed')
+    @mpPy6.CProcess.register_signal(signal_name='device_state_changed')
     def device_state(self, state):
         return state
 
-    @cmp.CProcess.register_signal(signal_name='capture_process_state_changed')
+    @mpPy6.CProcess.register_signal(signal_name='capture_process_state_changed')
     def capture_process_state(self, state):
         return state
 
     # ==================================================================================================================
     #
     # ==================================================================================================================
-    @cmp.CProcess.register_signal()
+    @mpPy6.CProcess.register_signal()
     def start_capturing_process(self):
         """
         Captures data from the device and puts it into a queue.
