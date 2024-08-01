@@ -18,7 +18,7 @@ dependencies = [
     'pandasgui',
     'fswidgets@git+https://github.com/agentsmith29/fstools.fswidgets@v.0.0.3.1',
     'confighandler@git+https://github.com/agentsmith29/fstools.confighandler@develop',
-    'mpPy6@git+git+https://github.com/agentsmith29/mpPy6@v6.0.0'
+    'mpPy6'
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
