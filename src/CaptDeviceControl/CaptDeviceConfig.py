@@ -6,7 +6,7 @@ Package Version:
 """
 import logging
 
-import confighandler as cfg
+import confPy6 as cfg
 
 
 class CaptDeviceConfig(cfg.ConfigNode):
