@@ -1,6 +1,6 @@
 [project]
 name = "captdevicecontrol"
-version = "1.1.1"
+version = "1.1.2"
 authors = [
   { name="Christoph Schmidt", email="cschmidt.fs@gmail.com" },
 ]
@@ -16,13 +16,13 @@ dependencies = [
     'rich',
     'pyqtgraph',
     'pandasgui',
-    'fswidgets@git+https://github.com/agentsmith29/fstools.fswidgets@v.0.0.3.1',
-    'confighandler@git+https://github.com/agentsmith29/fstools.confighandler@develop',
+    'fswidgets@git+https://github.com/agentsmith29/fstools.fswidgets',
+    'confPy6',
     'mpPy6'
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: GNU General Public License v3.0",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Operating System :: OS Independent",
 ]
 

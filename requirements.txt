@@ -12,7 +12,7 @@ mpPy6
 confPy6
 
 # add the git repo
-git+https://github.com/agentsmith29/fstools.fswidgets@v.0.0.3.1
+git+https://github.com/agentsmith29/fstools.fswidgets
 
 
 # Local installs
