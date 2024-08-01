@@ -9,7 +9,7 @@ import numpy as np
 from mpPy6.CProperty import CProperty
 
 from CaptDeviceControl.model.AD2Constants import AD2Constants
-from constants.dwfconstants import enumfilterType, enumfilterDemo, enumfilterUSB, acqmodeRecord, DwfStateConfig, \
+from CaptDeviceControl.constants.dwfconstants import enumfilterType, enumfilterDemo, enumfilterUSB, acqmodeRecord, DwfStateConfig, \
     DwfStatePrefill, DwfStateArmed
 
 
