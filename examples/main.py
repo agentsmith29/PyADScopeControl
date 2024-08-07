@@ -34,16 +34,30 @@ if __name__ == "__main__":
     setup_logging()
     app = QApplication()
 
-
+    # The config class, that stores the configuration for the scope
+    # using the confPy6 package (https://github.com/agentsmith29/confPy6).
     conf = CaptDevice.Config()
-    #conf.load("CaptDeviceConfig.yaml")
+    # Enable the log
     conf.internal_log_enabled = False
 
+    # --- Create the model, controller, and view. ---
 
+    # Pass the config to the model.
     model = CaptDevice.Model(conf)
-    controller = CaptDevice.Controller(model, None)
+
+    # Pass the model and None to the controller.
+    # The second argument start_capture_flag (here set to None) is a multiprocessing.Value that
+    # triggers the scope.
+    # This can be used to create a shared value between processes (e.g. a trigger by another process)
+    controller = CaptDevice.Controller(
+        model,
+        None  # start_capture_flag: multiprocessing.Value, triggers the scope
+    )
+
+    # Create the view
     window = CaptDevice.View(model, controller)
 
+    # Show the window
     window.show()
 
     sys.exit(app.exec())

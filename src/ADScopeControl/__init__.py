@@ -17,8 +17,6 @@ __description__ = extract_pyproject_info(pytoml,"description")
 __license__ = extract_pyproject_info(pytoml,"license")
 __url__ = extract_pyproject_info(pytoml,"url")
 
-print(f"Initializing {__name__} v{__version__} by {__author__} with license {__license__}")
-
 # For correctly display the icon in the taskbar
 myappid = f'agentsmith29.ADScopeControl.{__version__}'  # arbitrary string
 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)

@@ -6,8 +6,8 @@ Package Version:
 """
 from ctypes import CDLL
 
-from controller.DeviceInformation.WaveFormsAPI import WFAPIDeviceEnumeration, WFAPIDeviceControl, WFAPIChannels
-from controller.DeviceInformation.dataclasses.AnalogInChannelInfo import AnalogInChannelInfo, AnalogInChannelRetriever
+from ADScopeControl.controller.DeviceInformation.WaveFormsAPI import WFAPIDeviceEnumeration, WFAPIDeviceControl, WFAPIChannels
+from ADScopeControl.controller.DeviceInformation.dataclasses.AnalogInChannelInfo import AnalogInChannelInfo, AnalogInChannelRetriever
 
 
 class HWDeviceInformation:
