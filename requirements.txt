@@ -6,16 +6,9 @@ scipy
 rich
 pyqtgraph
 pandasgui
+toml
 
 # my packages
 mpPy6
 confPy6
-
-# add the git repo
-git+https://github.com/agentsmith29/fstools.fswidgets
-
-
-# Local installs
-#../tools/confighandler
-#../captdevicecontrol
-#../tools/cmp
+PySide6WidgetCollection>=1.0.2 # important, otherwise AboutDialog is not available

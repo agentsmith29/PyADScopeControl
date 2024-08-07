@@ -1,7 +1,5 @@
-import numpy
 from PySide6.QtCore import Signal, QObject
-from matplotlib import pyplot as plt
-from datetime import datetime, date, time
+from datetime import time
 
 # Needed for Digilent Analog Discovery 2 data acquisition	
 from ctypes import *
@@ -10,7 +8,7 @@ import logging
 
 from rich.logging import RichHandler
 
-from constants.dwfconstants import hdwfNone, acqmodeRecord, DwfStateConfig, DwfStatePrefill, DwfStateArmed, \
+from CaptDeviceControl.constants.dwfconstants import hdwfNone, acqmodeRecord, DwfStateConfig, DwfStatePrefill, DwfStateArmed, \
     AnalogOutNodeCarrier, funcSine
 
 

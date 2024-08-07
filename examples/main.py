@@ -2,13 +2,15 @@ import logging
 import sys
 import os
 
-sys.path.append('../src')
+file_path, _ = os.path.split(os.path.realpath(__file__))
+src_path = f"{file_path}/../src"
+sys.path.append(src_path)
+
 
 from PySide6.QtWidgets import QApplication
 from rich.logging import RichHandler
 
-
-import CaptDeviceControl as CaptDevice
+import ADScopeControl as CaptDevice
 
 
 
