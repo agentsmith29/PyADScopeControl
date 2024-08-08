@@ -12,10 +12,11 @@ from pathlib import Path
 
 from WidgetCollection.Tools.PyProjectExtractor import extract_pyproject_info
 # Directly in the repo
+
 pytoml = pathlib.Path(__file__).parent.parent.parent
-if not pytoml.exists():
+if not (pytoml / "pyproject.toml").exists():
     # if installed via pip
-    pytoml = pathlib.Path(__file__).parent
+    pytoml = pathlib.Path(__file__)
 
 __version__ = extract_pyproject_info(pytoml,"version")
 __author__ = extract_pyproject_info(pytoml,"author")
