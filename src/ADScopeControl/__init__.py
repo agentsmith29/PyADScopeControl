@@ -7,10 +7,16 @@ Package Version:
 
 
 import ctypes
+import pathlib
 from pathlib import Path
 
 from WidgetCollection.Tools.PyProjectExtractor import extract_pyproject_info
-pytoml = Path(__file__).parent.parent.parent
+# Directly in the repo
+pytoml = pathlib.Path(__file__).parent.parent.parent
+if not pytoml.exists():
+    # if installed via pip
+    pytoml = pathlib.Path(__file__).parent
+
 __version__ = extract_pyproject_info(pytoml,"version")
 __author__ = extract_pyproject_info(pytoml,"author")
 __description__ = extract_pyproject_info(pytoml,"description")
