@@ -103,6 +103,11 @@ Refer to the user manual or documentation for detailed instructions on specific 
 Contributions to Laser Control are welcome! If you have suggestions for improvements, encounter any issues, or would 
 like to add new features, please feel free to open an issue or submit a pull request on the GitHub repository.
 
+
+# Citing
+This project is part of the Software [FlexSensor](https://github.com/agentsmith29/flexsensor), which has been published under DOI [10.2139/ssrn.4828876](https://doi.org/10.2139/ssrn.4828876).
+
+
 # License
 
 This project is licensed under the MIT License. See the LICENSE file for details.
