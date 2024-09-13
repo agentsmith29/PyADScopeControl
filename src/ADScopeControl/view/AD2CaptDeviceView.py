@@ -6,7 +6,7 @@ import numpy as np
 import pyqtgraph as pg
 from PySide6.QtCore import QTimer
 from PySide6.QtGui import QAction, QIcon, QPixmap
-from PySide6.QtWidgets import QMainWindow, QStatusBar, QMenu, QToolButton
+from PySide6.QtWidgets import QMainWindow, QStatusBar, QMenu, QToolButton, QMessageBox
 from WidgetCollection.Dialogs import AboutDialog
 
 from pyqtgraph.dockarea import DockArea, Dock
@@ -16,7 +16,8 @@ from ADScopeControl.controller.BaseADScopeController import BaseADScopeControlle
 from ADScopeControl.model.AD2ScopeModel import AD2ScopeModel
 from ADScopeControl.model.AD2Constants import AD2Constants
 from ADScopeControl.view.Ui_AD2ControlWindowNew import Ui_AD2ControlWindowNew
-from ADScopeControl.view.widget.WidgetCapturingInformation import WidgetCapturingInformation, WidgetDeviceInformation
+from ADScopeControl.view.widget.WidgetCapturingInformation import WidgetCapturingInformation, WidgetDeviceInformation, \
+    WidgetSupervisionInformation
 from ADScopeControl import __version__, __description__, __author__, __license__, __url__
 
 from pandasgui import show as pdview
@@ -62,8 +63,11 @@ class ControlWindow(QMainWindow):
 
         self.capt_info = WidgetCapturingInformation()
         self.dev_info = WidgetDeviceInformation()
+        self.supervisor_info = WidgetSupervisionInformation()
         self._ui.grd_information.addWidget(self.capt_info, 0, 0, 1, 1)
-        self._ui.grd_information.addWidget(self.dev_info, 0, 1, 1, 1)
+        self._ui.grd_information.addWidget(self.supervisor_info, 1, 0, 1, 1)
+        self._ui.grd_information.addWidget(self.dev_info, 0, 1, 2, 1)
+
 
         # The Information Widgets
         self._ui.grd_plot.addWidget(self._init_UI_live_plot(), 1, 0, 1, 1)
@@ -192,6 +196,10 @@ class ControlWindow(QMainWindow):
             self._on_capture_process_state_changed)
         self.model.analog_in.signals.selected_ain_channel_changed.connect(self._on_selected_ain_channel_changed)
 
+
+
+
+
         # # WaveForms Runtime (DWF) Information
         # # Connected Device Information
         self.model.device_information.signals.device_name_changed.connect(self._on_device_name_changed)
@@ -200,9 +208,38 @@ class ControlWindow(QMainWindow):
         self.model.capturing_information.signals.ready_for_recording_changed.connect(
             self._on_ready_for_recording_changed)
 
+        # Supervision Information
+        self.model.supervisor_information.signals.supervisor_name_changed.connect(self._on_supervisor_name_changed)
+        self.model.supervisor_information.signals.supervised_changed.connect(self._on_supervised_changed)
+        self.model.supervisor_information.signals.supervisor_model_changed.connect(self._on_supervised_model_changed)
+
+
+
     # ==================================================================================================================
     # Slots
     # ==================================================================================================================
+    def _on_supervisor_sweep_start_wavelength_changed(self, sweep_start_wavelength):
+        print(f"Sweep Start Wavelength: {sweep_start_wavelength}")
+
+    def _on_supervisor_sweep_end_wavelength_changed(self, sweep_end_wavelength):
+        print(f"Sweep End Wavelength: {sweep_end_wavelength}")
+
+
+    def _on_supervisor_name_changed(self, supervisor_name):
+        self.supervisor_info.supervisor_name = supervisor_name
+
+    def _on_supervised_changed(self, supervised):
+        self.supervisor_info.supervised = supervised
+
+    def _on_supervised_model_changed(self):
+       self.model.supervisor_information.supervisor_model.signals.sweep_start_wavelength_changed.connect(
+           self._on_supervisor_sweep_start_wavelength_changed
+       )
+
+       self.model.supervisor_information.supervisor_model.signals.sweep_stop_wavelength_changed.connect(
+           self._on_supervisor_sweep_end_wavelength_changed
+
+       )
 
     def _on_dwf_version_changed(self, dwf_version):
         """
@@ -264,10 +301,13 @@ class ControlWindow(QMainWindow):
         self.model.analog_in.selected_ain_channel = channel_index
 
     def _on_ui_btn_connect_clicked(self):
-        try:
-            self.controller.open_device()
-        except Exception as e:
-            self.logger.error(f"Error: {e}")
+        if not self.model.device_information.device_connected:
+            try:
+                self.controller.open_device()
+            except Exception as e:
+                self.logger.error(f"Error: {e}")
+        else:
+            self.controller.close_device()
 
     def _on_ui_sample_rate_changed(self, sample_rate: int):
         self.model.sample_rate = sample_rate
@@ -346,6 +386,24 @@ class ControlWindow(QMainWindow):
             self.capt_info.led_is_capt.set_color(color="red")
             self.capt_info.lbl_is_capt.setText(AD2Constants.CapturingState.STOPPED(True))
             self._ui.btn_record.setChecked(False)
+            # To get acceleration, deceleration, etc..
+            self.controller.read_supervisor_state()
+
+            # Display a message box
+            self.msg_finished_capture = QMessageBox()
+            self.msg_finished_capture.setIcon(QMessageBox.Icon.Information)
+
+            self.msg_finished_capture.setText(f"Capture finished! Supervisor Information:\n"
+                                              f"Start: {self.model.supervisor_information.sweep_start_wavelength}\n"
+                                              f"End: {self.model.supervisor_information.sweep_stop_wavelength}\n"
+                                              f"Velocity: {self.model.supervisor_information.velocity}\n"
+                                              f"Acceleration: {self.model.supervisor_information.acceleration}\n"
+                                              f"Deceleration: {self.model.supervisor_information.deceleration}")
+
+            self.msg_finished_capture.setWindowTitle("Capture finished")
+            self.msg_finished_capture.setStandardButtons(QMessageBox.StandardButton.Ok)
+            self.msg_finished_capture.show()
+
 
     def _on_ready_for_recording_changed(self, ready):
         if ready:
@@ -445,6 +503,6 @@ class ControlWindow(QMainWindow):
         pass
 
     def closeEvent(self, args):
-        print("Destroyed")
-        self.controller.exit()
         self.destroyed.emit()
+        self.controller.kill_thread = True
+        self.controller.exit()

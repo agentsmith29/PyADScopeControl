@@ -7,6 +7,7 @@ from ADScopeControl.model.AD2Constants import AD2Constants
 from ADScopeControl.model.submodels.AD2CaptDeviceAnalogInModel import AD2CaptDeviceAnalogInModel
 from ADScopeControl.model.submodels.AD2CaptDeviceCapturingModel import AD2CaptDeviceCapturingModel
 from ADScopeControl.model.submodels.AD2CaptDeviceInformationModel import AD2CaptDeviceInformationModel
+from ADScopeControl.model.submodels.AD2CaptDeviceSupervisorModel import AD2CaptDeviceSupervisorModel
 
 
 # from MeasurementData.Properties.AD2CaptDeviceProperties import AD2CaptDeviceProperties
@@ -97,6 +98,7 @@ class AD2ScopeModel:
         self.device_information = AD2CaptDeviceInformationModel(self.ad2captdev_config)
         self.analog_in = AD2CaptDeviceAnalogInModel(self.ad2captdev_config)
         self.capturing_information = AD2CaptDeviceCapturingModel(self.ad2captdev_config)
+        self.supervisor_information = AD2CaptDeviceSupervisorModel()
         # Acquisition Settings
 
         # Analog Out Information

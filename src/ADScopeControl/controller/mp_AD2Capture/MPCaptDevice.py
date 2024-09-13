@@ -9,12 +9,12 @@ import numpy as np
 from mpPy6.CProperty import CProperty
 
 from ADScopeControl.model.AD2Constants import AD2Constants
-from ADScopeControl.constants.dwfconstants import enumfilterType, enumfilterDemo, enumfilterUSB, acqmodeRecord, DwfStateConfig, \
+from ADScopeControl.constants.dwfconstants import enumfilterType, enumfilterDemo, enumfilterUSB, acqmodeRecord, \
+    DwfStateConfig, \
     DwfStatePrefill, DwfStateArmed
 
 
 class MPCaptDevice(mpPy6.CProcess, ):
-
 
     #@staticmethod
     def timeit(func):
@@ -72,6 +72,8 @@ class MPCaptDevice(mpPy6.CProcess, ):
         # ==============================================================================================================
         self._samples_lost = 0
         self._samples_corrupted = 0
+
+
 
     # ==================================================================================================================
     # Getter and Setter
@@ -166,7 +168,6 @@ class MPCaptDevice(mpPy6.CProcess, ):
         self.ain_channels = self.get_ain_channels()
         self.ain_buffer_size = self.get_ain_buffer_size(self._selected_device_index)
 
-
     @CProperty
     def ready_for_recording(self):
         return self._ready_for_recording
@@ -174,6 +175,7 @@ class MPCaptDevice(mpPy6.CProcess, ):
     @ready_for_recording.setter(emit_to='ready_for_recording_changed')
     def ready_for_recording(self, value: bool):
         self._ready_for_recording = value
+
     # ==================================================================================================================
     #
     # ==================================================================================================================
@@ -201,8 +203,8 @@ class MPCaptDevice(mpPy6.CProcess, ):
     # Device Enumeration without connecting to the device
     # ==================================================================================================================
     @mpPy6.CProcess.register_signal()
-    def discover_connected_devices(self, filter_type: int = enumfilterType.value | enumfilterDemo.value | enumfilterUSB.value):
-
+    def discover_connected_devices(self,
+                                   filter_type: int = enumfilterType.value | enumfilterDemo.value | enumfilterUSB.value):
 
         self.logger.info(f"Discovering connected devices...")
         # enumerate connected devices
@@ -233,6 +235,7 @@ class MPCaptDevice(mpPy6.CProcess, ):
             # _mp_log_debug(f"Found {type} device: {devicename.value.decode('UTF-8')} ({serialnum.value.decode('UTF-8')})")
         self.logger.debug(f"Found {len(connected_devices)} devices.")
         return connected_devices
+
     # ==================================================================================================================
     # Settings from process Control
     # ==================================================================================================================
@@ -250,6 +253,7 @@ class MPCaptDevice(mpPy6.CProcess, ):
     @mpPy6.CProcess.register_signal()
     def set_sample_rate(self, sample_rate):
         self.sample_rate = sample_rate
+
     # ==================================================================================================================
     # Functions for opening and closing the device
     # ==================================================================================================================
@@ -286,6 +290,7 @@ class MPCaptDevice(mpPy6.CProcess, ):
         self.device_state(AD2Constants.DeviceState.ACQ_NOT_STARTED())
         return int(self.hdwf.value)
 
+    @mpPy6.CProcess.register_signal()
     def close_device(self):
         # self.dwf.FDwfAnalogOutReset(self.hdwf, c_int(channel))
         self.logger.debug(f"[Task] Closing device...")
@@ -305,13 +310,13 @@ class MPCaptDevice(mpPy6.CProcess, ):
         #print(f">>><<<< {cInfo}")
         #self.ain_channels = cInfo.value
         #if self.ain_channels == 0:
-            # Sometimes, the device reports a wrong number of ain channels
-            # so we can try to connect to the device first and retrieve the information
+        # Sometimes, the device reports a wrong number of ain channels
+        # so we can try to connect to the device first and retrieve the information
         self.open_device()
         self.ain_channels = self.analog_in_channels_count()
         self.close_device()
         self.logger.info(f"Device {self.device_name} (#{self.selected_device_index}, SNR: {self.device_serial_number}) "
-                          f"AIn: {self.ain_channels}")
+                         f"AIn: {self.ain_channels}")
         return list(range(0, self.ain_channels))
 
     def get_ain_buffer_size(self, device_id) -> int:
@@ -537,7 +542,6 @@ class MPCaptDevice(mpPy6.CProcess, ):
         hdwf = self.hdwf
         self.device_state(AD2Constants.DeviceState.DEV_CAPT_SETUP())
 
-
         self.setup_sine_wave(self.selected_ain_channel)
 
         self.setup_acquisition(self.sample_rate, self.selected_ain_channel)
@@ -572,7 +576,7 @@ class MPCaptDevice(mpPy6.CProcess, ):
             # self.dwf.FDwfAnalogOutReset(self.hdwf, c_int(0))
             self.device_state(AD2Constants.DeviceState.DEV_CAPT_STREAMING())
             self.ready_for_recording = True
-            while self.kill_capture_flag.value == int(False):
+            while self.kill_capture_flag.value == int(False) and self._kill_flag.value == int(True):
                 self.dwf.FDwfAnalogInStatus(hdwf, c_int(1), byref(sts))
                 # self._c_samples = 0
 
@@ -595,7 +599,6 @@ class MPCaptDevice(mpPy6.CProcess, ):
 
                 arr = np.array(rgd_samples, copy=True)
                 iteration_time = time.time() - time_start
-
 
                 if self.start_capture_flag.value == int(True):
                     if not capture_started:
@@ -646,9 +649,6 @@ class MPCaptDevice(mpPy6.CProcess, ):
         self.dwf.FDwfAnalogOutConfigure(self.hdwf, c_int(channel), c_int(1))
         time.sleep(1)
         self.logger.debug(f"Sine wave on output channel {channel} configured.")
-
-
-
 
 
 if __name__ == "__main__":

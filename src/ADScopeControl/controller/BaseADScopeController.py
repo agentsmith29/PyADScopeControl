@@ -8,6 +8,7 @@ from multiprocessing import Queue, Value, Lock
 import mpPy6
 import pandas as pd
 from PySide6.QtCore import QThreadPool, Signal
+from PySide6.QtWidgets import QMessageBox
 from numpy import ndarray
 
 from ADScopeControl.controller.mp_AD2Capture.MPCaptDevice import MPCaptDevice
@@ -55,7 +56,6 @@ class BaseADScopeController(mpPy6.CProcessControl):
         self.stream_data_queue = Queue()
         self.capture_data_queue = Queue()
 
-
         if start_capture_flag is None:
             self.start_capture_flag = Value('i', 0, lock=self.lock)
         else:
@@ -64,7 +64,6 @@ class BaseADScopeController(mpPy6.CProcessControl):
 
         # Number of sa
         self.streaming_dqueue: deque = None  # a dqueue, initialize later
-
 
         self.register_child_process(
             MPCaptDevice,
@@ -83,7 +82,16 @@ class BaseADScopeController(mpPy6.CProcessControl):
 
         self.selected_ain_channel = self.model.analog_in.selected_ain_channel
 
+        # Some Signals and slots to connect
+        self.model.supervisor_information.signals.supervised_changed.connect(self._on_supervised_changed)
+        self.model.supervisor_information.signals.supervisor_name_changed.connect(self._on_supervisor_name_changed)
 
+    # Supervision slots
+    def _on_supervised_changed(self):
+        self.logger.info(f"Device is now supervised.")
+
+    def _on_supervisor_name_changed(self, name: str):
+        self.logger.info(f"Device is supervised by {name}")
 
     def connect_signals(self):
         self.dwf_version_changed.connect(self._on_dwf_version_changed)
@@ -115,9 +123,7 @@ class BaseADScopeController(mpPy6.CProcessControl):
 
         self.device_state_changed.connect(
             lambda x: type(self.model.device_information).device_state.fset(self.model.device_information, x))
-        self.capture_process_state_changed.connect(
-            lambda x: type(self.model.capturing_information).device_capturing_state.fset(
-                self.model.capturing_information, x))
+        self.capture_process_state_changed.connect(self._on_capture_process_state_changed)
         self.ready_for_recording_changed.connect(
             lambda x: type(self.model.capturing_information).ready_for_recording.fset(
                 self.model.capturing_information, x))
@@ -164,8 +170,10 @@ class BaseADScopeController(mpPy6.CProcessControl):
         self.logger.info(f"Opening device finished with handle {device_handle}")
         self.start_capturing_process()
 
+    @mpPy6.CProcessControl.register_function(close_device_finished)
     def close_device(self):
-        pass
+        self.kill_capture_flag.value = int(True)
+        print("Closing device")
         # self.close_device()
 
     @mpPy6.CProcessControl.register_function(capture_process_state_changed)
@@ -204,7 +212,6 @@ class BaseADScopeController(mpPy6.CProcessControl):
             :return:
         """
 
-
     def on_discovered_devices_changed(self, devices: list):
         self.logger.info(f"Discovered devices: {len(devices)}")
         self.logger.debug(f"Discovered devices: {devices}")
@@ -220,6 +227,19 @@ class BaseADScopeController(mpPy6.CProcessControl):
     @abstractmethod
     def _capture(self):
         raise NotImplementedError
+
+    def _on_capture_process_state_changed(self, state):
+        self.model.capturing_information.device_capturing_state = state
+
+    def read_supervisor_state(self):
+        if self.model.supervisor_information.supervised and self.model.supervisor_information.supervisor_model is not None:
+            self.model.supervisor_information.sweep_start_wavelength = (
+                self.model.supervisor_information.supervisor_model.laser_config.wl_sweep_start.get())
+            self.model.supervisor_information.sweep_stop_wavelength = (
+                self.model.supervisor_information.supervisor_model.laser_config.wl_sweep_stop.get())
+            self.model.supervisor_information.velocity = self.model.supervisor_information.supervisor_model.laser_config.velocity.get()
+            self.model.supervisor_information.acceleration = self.model.supervisor_information.supervisor_model.laser_config.acceleration.get()
+            self.model.supervisor_information.deceleration = self.model.supervisor_information.supervisor_model.laser_config.deceleration.get()
 
     def set_ad2_acq_status(self, record):
         if record:
@@ -257,7 +277,7 @@ class BaseADScopeController(mpPy6.CProcessControl):
         self.model.recorded_samples = []
         self.model.recorded_sample_stream = []
 
-    def set_recorded_data_time_axis(self, func = None):
+    def set_recorded_data_time_axis(self, func=None):
 
         # Create a new column same as the index
         self.model.capturing_information.recorded_samples_df['time (s)'] = (
@@ -268,7 +288,7 @@ class BaseADScopeController(mpPy6.CProcessControl):
 
         self.model.capturing_information.recorded_samples_df['time (ms)'] = (
             self.model.capturing_information.recorded_samples_df.index.to_series().apply(
-                lambda x: (x / self.model.capturing_information.sample_rate)*1000
+                lambda x: (x / self.model.capturing_information.sample_rate) * 1000
             )
         )
 
@@ -283,12 +303,18 @@ class BaseADScopeController(mpPy6.CProcessControl):
     # self.model.device_capturing_state = AD2Constants.CapturingState.RUNNING()
 
     def create_dataframe(self):
+
+        # self.model.supervisor_information.sweep_start_wavelength
+        # self.model.supervisor_information.sweep_stop_wavelength
+        # self.model.supervisor_information.velocity
+        # self.model.supervisor_information.acceleration
+        # self.model.supervisor_information.deceleration
+
         self.model.capturing_information.recorded_samples_df = (
             pd.DataFrame(self.model.capturing_information.recorded_samples,
                          columns=['Amplitude']))
 
         self.set_recorded_data_time_axis()
-
 
     def stop_capture(self):
         self.start_capture_flag.value = 0
@@ -326,10 +352,11 @@ class BaseADScopeController(mpPy6.CProcessControl):
 
     def qt_consume_data(self):
         itoogle = 0
-        while True:
+        while not self.kill_thread:
             t = time.time()
             try:
-                capture_data = self.capture_data_queue.get(block=True)
+                capture_data = self.capture_data_queue.get(block=True, timeout=1)
+
                 if isinstance(capture_data, ndarray):
                     # print(f"Stream data queue size {len(stream_data)}")
                     for d in capture_data:
@@ -344,20 +371,22 @@ class BaseADScopeController(mpPy6.CProcessControl):
                 t_end = time.time()
                 # print(f"Time to get data {t_end-t}")
             except Exception as e:
-                self.logger.info(f"Timeout reached. No data in queue {self.stream_data_queue.qsize()} or"
-                                 f"{e}")
+               pass
+               #self.logger.info(f"Timeout reached. No data in queue {self.stream_data_queue.qsize()} or"
+               #                 f"{e}")
         self.logger.info("Streaming data consume thread ended")
 
     def qt_stream_data(self):
         itoogle = 0
-        while True:
+
+        while not self.kill_thread:
             t = time.time()
             try:
-                stream_data = self.stream_data_queue.get(block=True)
+                stream_data = self.stream_data_queue.get(block=True, timeout=1)
                 if isinstance(stream_data, ndarray):
                     # print(f"Stream data queue size {len(stream_data)}")
                     for d in stream_data:
-                        if itoogle == math.ceil(self.model.capturing_information.sample_rate/1000):
+                        if itoogle == math.ceil(self.model.capturing_information.sample_rate / 1000):
                             self.streaming_dqueue.append(d)
                             itoogle = 0
                         else:
@@ -365,8 +394,9 @@ class BaseADScopeController(mpPy6.CProcessControl):
                 t_end = time.time()
                 # print(f"Time to get data {t_end-t}")
             except Exception as e:
-                self.logger.info(f"Timeout reached. No data in queue {self.stream_data_queue.qsize()} or"
-                                 f"{e}")
+               pass
+               # self.logger.info(f"Timeout reached. No data in queue {self.stream_data_queue.qsize()} or"
+               #                  f"{e}")
         self.logger.info("Streaming data consume thread ended")
 
     def qt_get_state(self):
@@ -376,9 +406,10 @@ class BaseADScopeController(mpPy6.CProcessControl):
             # time.sleep(0.1)
         self.logger.info("Status data consume thread ended")
 
-
     # ==================================================================================================================
     # Destructor
     # ==================================================================================================================
     def exit(self):
+        for c in self.thread_manager.children():
+            c.exit()
         self.safe_exit()

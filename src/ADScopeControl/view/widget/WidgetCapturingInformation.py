@@ -113,6 +113,48 @@ class WidgetDeviceInformation(QWidget):
         self.lbl_analog_in_channel = QLabel("AnalogIn Channel: Unknown")
         layout.addWidget(self.lbl_analog_in_channel, 4, 0)
 
+        grid_group_box.setLayout(layout)
+        self.layout.addWidget(grid_group_box)
+        self.setLayout(self.layout)
+
+class WidgetSupervisionInformation(QWidget):
+    def __init__(self):
+        super().__init__()
+
+        self._supervised = False
+        self._supervisor_name = "Unknown"
+
+        self.layout = QGridLayout()
+
+        self.init_UI()
+
+    @property
+    def supervised(self):
+        return self._supervised
+
+    @supervised.setter
+    def supervised(self, value):
+        self._supervised = value
+        self.lbl_supervised.setText(f"Supervised: {self.supervised}")
+
+    @property
+    def supervisor_name(self):
+        return self._supervisor_name
+
+    @supervisor_name.setter
+    def supervisor_name(self, value):
+        self._supervisor_name = value
+        self.lbl_supervisor.setText(f"Supervisor: {self.supervisor_name}")
+
+    def init_UI(self):
+        grid_group_box = QGroupBox("Device Information")
+        layout = QGridLayout()
+
+        self.lbl_supervised = QLabel("Supervised: Unknown")
+        layout.addWidget(self.lbl_supervised, 0, 0)
+
+        self.lbl_supervisor = QLabel("Supervisor: Unknown")
+        layout.addWidget(self.lbl_supervisor, 1, 0)
 
         grid_group_box.setLayout(layout)
         self.layout.addWidget(grid_group_box)
