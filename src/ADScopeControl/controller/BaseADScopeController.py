@@ -12,6 +12,7 @@ from PySide6.QtWidgets import QMessageBox
 from numpy import ndarray
 
 from ADScopeControl.controller.mp_AD2Capture.MPCaptDevice import MPCaptDevice
+from ADScopeControl.controller.sweepHelpers import ramp
 from ADScopeControl.model.AD2ScopeModel import AD2ScopeModel
 from ADScopeControl.model.AD2Constants import AD2Constants
 
@@ -292,6 +293,28 @@ class BaseADScopeController(mpPy6.CProcessControl):
             )
         )
 
+    def map_time_to_wavelength(self):
+        try:
+            startWavelength = self.model.supervisor_information.sweep_start_wavelength
+            distance = (
+                self.model.supervisor_information.sweep_stop_wavelength
+                - startWavelength      
+            )
+            wavelengthRamp = ramp(
+                t=self.model.capturing_information.recorded_samples_df['time (s)'].to_numpy(),
+                distance=distance,
+                speed=self.model.supervisor_information.velocity,
+                acceleration=self.model.supervisor_information.acceleration,
+                deceleration=self.model.supervisor_information.deceleration
+            )
+            self.model.capturing_information.recorded_samples_df['wavelength (nm)'] = (
+                wavelengthRamp + startWavelength
+            )
+        except Exception as e:
+            Warning(str(e))
+        else:
+            pass
+
     # def start_capture(self, clear=True):
     #    print(f"Start capture. Clear {clear}")
     #    self.start_capture_flag.value = 1
@@ -315,6 +338,7 @@ class BaseADScopeController(mpPy6.CProcessControl):
                          columns=['Amplitude']))
 
         self.set_recorded_data_time_axis()
+        self.map_time_to_wavelength()
 
     def stop_capture(self):
         self.start_capture_flag.value = 0
