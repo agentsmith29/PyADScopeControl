@@ -6,7 +6,7 @@ import numpy as np
 import pyqtgraph as pg
 from PySide6.QtCore import QTimer
 from PySide6.QtGui import QAction, QIcon, QPixmap
-from PySide6.QtWidgets import QMainWindow, QStatusBar, QMenu, QToolButton, QMessageBox
+from PySide6.QtWidgets import QMainWindow, QStatusBar, QMenu, QToolButton, QMessageBox, QFileDialog
 from WidgetCollection.Dialogs import AboutDialog
 
 from pyqtgraph.dockarea import DockArea, Dock
@@ -25,7 +25,31 @@ from pandasgui import show as pdview
 # get the version of the current module, given in the pyproject.toml
 
 
+def downsample_data(data, num_points):
+    """
+    Downsample the data by selecting points at equal intervals.
 
+    Args:
+        data (list): The original data list.
+        num_points (int): The desired number of data points.
+
+    Returns:
+        list: The downsampled data list.
+    """
+    if num_points >= len(data):
+        return data
+
+    interval = len(data) // num_points
+    downsampled_data = [data[i * interval] for i in range(num_points)]
+
+    # If the length of the data is not exactly divisible by the interval,
+    # append the last point to the downsampled data.
+    if len(data) % num_points != 0:
+        downsampled_data.append(data[-1])
+
+    return downsampled_data
+
+previewDataPoints = 10000
 
 class ControlWindow(QMainWindow):
 
@@ -112,6 +136,11 @@ class ControlWindow(QMainWindow):
 
         self.file_menu.addSeparator()
 
+        self.act_save_data = QAction('Save Data', self)
+        self.act_save_data.triggered.connect(self.save_data)
+        self.act_save_data.setShortcut('Ctrl+S')
+        self.file_menu.addAction(self.act_save_data)
+
         self.act_view_data = QAction('View Data', self)
         self.act_view_data.triggered.connect(self.view_data)
         self.act_view_data.setShortcut('Ctrl+Alt+S')
@@ -129,6 +158,15 @@ class ControlWindow(QMainWindow):
 
         self._ui.menu_file.setMenu(self.file_menu)
         self._ui.menu_file.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+
+    def save_data(self):
+        self.controller.create_dataframe()
+
+        # Create a file dialog to save the dataframe
+        file_path, _ = QFileDialog.getSaveFileName(self, "Save Data", "", "CSV Files (*.csv)")
+        if file_path:
+            self.model.capturing_information.recorded_samples_df.to_csv(file_path)
+            self.status_bar.showMessage(f"Data saved to {file_path}")
 
     def view_data(self):
         self.controller.create_dataframe()
@@ -432,9 +470,13 @@ class ControlWindow(QMainWindow):
         if len(self.model.capturing_information.recorded_samples) > 0:
             self.scope_captured.clear()
             # print(self.ad2device.recorded_samples)
-            d = self.model.capturing_information.recorded_samples_preview
 
-            self.scope_captured.plot(d, pen=pg.mkPen(width=1))
+            # Downsample the data
+            downsampled_data = downsample_data(self.model.capturing_information.recorded_samples, previewDataPoints)
+
+            # Plot the downsampled data
+            self.scope_captured.plot(downsampled_data, pen=pg.mkPen(width=1))
+
             # print(f"Length: {len(self.controller.recorded_sample_stream)}")
 
         #if len(self.controller.status_dqueue) > 0:
