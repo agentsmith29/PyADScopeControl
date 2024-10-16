@@ -102,11 +102,11 @@ class ControlWindow(QMainWindow):
 
         # Timer for periodically updating the plot
         self.capture_update_timer = QTimer()
-        self.capture_update_timer.setInterval(10)
+        self.capture_update_timer.setInterval(50)
         self.capture_update_timer.timeout.connect(self._on_capture_update_plot)
 
         self.stream_update_timer = QTimer()
-        self.stream_update_timer.setInterval(40)
+        self.stream_update_timer.setInterval(50)
         self.stream_update_timer.timeout.connect(self._on_stream_update_timer_timeout)
 
         self.autostop_capture = QTimer()
@@ -184,7 +184,7 @@ class ControlWindow(QMainWindow):
         self.scope_original = pg.PlotWidget(title="AD2 Acquisition")
         self.scope_original.plotItem.showGrid(x=True, y=True, alpha=1)
         d1.addWidget(self.scope_original)
-        self.scope_original.setYRange(-1.5, 1.5, padding=0)
+        #self.scope_original.setYRange(-1.5, 1.5, padding=0)
 
         self.scope_captured = pg.PlotWidget(title="Captured Data")
         self.scope_captured.plotItem.showGrid(x=True, y=True, alpha=1)
@@ -276,7 +276,6 @@ class ControlWindow(QMainWindow):
 
        self.model.supervisor_information.supervisor_model.signals.sweep_stop_wavelength_changed.connect(
            self._on_supervisor_sweep_end_wavelength_changed
-
        )
 
     def _on_dwf_version_changed(self, dwf_version):
@@ -472,7 +471,10 @@ class ControlWindow(QMainWindow):
             # print(self.ad2device.recorded_samples)
 
             # Downsample the data
-            downsampled_data = downsample_data(self.model.capturing_information.recorded_samples, previewDataPoints)
+            downsampled_data = downsample_data(
+                self.model.capturing_information.recorded_samples, 
+                previewDataPoints
+            )
 
             # Plot the downsampled data
             self.scope_captured.plot(downsampled_data, pen=pg.mkPen(width=1))
@@ -491,8 +493,12 @@ class ControlWindow(QMainWindow):
         # print(self.ad2device.recorded_samples)
 
         self.scope_original.plot(
-            np.array(self.controller.streaming_dqueue),  # [::100],
-            pen=pg.mkPen(width=1))
+            downsample_data(
+                np.array(self.controller.streaming_dqueue),
+                previewDataPoints
+            ),
+            pen=pg.mkPen(width=1)
+        )
         # self._ui.lcd_unconsumed_stream.display(self.model.capturing_information.unconsumed_stream_samples)
 
     # ============== Connected Device Information
