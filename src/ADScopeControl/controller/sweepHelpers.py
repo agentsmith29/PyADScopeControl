@@ -26,7 +26,8 @@ def ramp(
 
     # Calculate distance covered during constant speed
     distanceAtSpeed = absDistance - distanceAcceleration - distanceDeceleration
-    assert distanceAtSpeed >= 0
+    assert distanceAtSpeed >= 0 # TODO: if smaller than zero, sweep is incomplete and
+    # no constant speed is possible -> calculate when to switch to deceleration
     timeAtSpeed = distanceAtSpeed / speed
 
     # Calculate total time
