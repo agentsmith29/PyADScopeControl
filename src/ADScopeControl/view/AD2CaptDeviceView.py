@@ -6,7 +6,7 @@ import numpy as np
 import pyqtgraph as pg
 from PySide6.QtCore import QTimer
 from PySide6.QtGui import QAction, QIcon, QPixmap
-from PySide6.QtWidgets import QMainWindow, QStatusBar, QMenu, QToolButton, QMessageBox
+from PySide6.QtWidgets import QMainWindow, QStatusBar, QMenu, QToolButton, QMessageBox, QFileDialog
 from WidgetCollection.Dialogs import AboutDialog
 
 from pyqtgraph.dockarea import DockArea, Dock
@@ -25,7 +25,31 @@ from pandasgui import show as pdview
 # get the version of the current module, given in the pyproject.toml
 
 
+def downsample_data(data, num_points):
+    """
+    Downsample the data by selecting points at equal intervals.
 
+    Args:
+        data (list): The original data list.
+        num_points (int): The desired number of data points.
+
+    Returns:
+        list: The downsampled data list.
+    """
+    if num_points >= len(data):
+        return data
+
+    interval = len(data) // num_points
+    downsampled_data = [data[i * interval] for i in range(num_points)]
+
+    # If the length of the data is not exactly divisible by the interval,
+    # append the last point to the downsampled data.
+    if len(data) % num_points != 0:
+        downsampled_data.append(data[-1])
+
+    return downsampled_data
+
+previewDataPoints = 10000
 
 class ControlWindow(QMainWindow):
 
@@ -78,11 +102,11 @@ class ControlWindow(QMainWindow):
 
         # Timer for periodically updating the plot
         self.capture_update_timer = QTimer()
-        self.capture_update_timer.setInterval(10)
+        self.capture_update_timer.setInterval(50)
         self.capture_update_timer.timeout.connect(self._on_capture_update_plot)
 
         self.stream_update_timer = QTimer()
-        self.stream_update_timer.setInterval(40)
+        self.stream_update_timer.setInterval(50)
         self.stream_update_timer.timeout.connect(self._on_stream_update_timer_timeout)
 
         self.autostop_capture = QTimer()
@@ -112,6 +136,11 @@ class ControlWindow(QMainWindow):
 
         self.file_menu.addSeparator()
 
+        self.act_save_data = QAction('Save Data', self)
+        self.act_save_data.triggered.connect(self.save_data)
+        self.act_save_data.setShortcut('Ctrl+S')
+        self.file_menu.addAction(self.act_save_data)
+
         self.act_view_data = QAction('View Data', self)
         self.act_view_data.triggered.connect(self.view_data)
         self.act_view_data.setShortcut('Ctrl+Alt+S')
@@ -130,6 +159,15 @@ class ControlWindow(QMainWindow):
         self._ui.menu_file.setMenu(self.file_menu)
         self._ui.menu_file.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
 
+    def save_data(self):
+        self.controller.create_dataframe()
+
+        # Create a file dialog to save the dataframe
+        file_path, _ = QFileDialog.getSaveFileName(self, "Save Data", "", "CSV Files (*.csv)")
+        if file_path:
+            self.model.capturing_information.recorded_samples_df.to_csv(file_path)
+            self.status_bar.showMessage(f"Data saved to {file_path}")
+
     def view_data(self):
         self.controller.create_dataframe()
         pdview(self.model.capturing_information.recorded_samples_df)
@@ -146,7 +184,7 @@ class ControlWindow(QMainWindow):
         self.scope_original = pg.PlotWidget(title="AD2 Acquisition")
         self.scope_original.plotItem.showGrid(x=True, y=True, alpha=1)
         d1.addWidget(self.scope_original)
-        self.scope_original.setYRange(-1.5, 1.5, padding=0)
+        #self.scope_original.setYRange(-1.5, 1.5, padding=0)
 
         self.scope_captured = pg.PlotWidget(title="Captured Data")
         self.scope_captured.plotItem.showGrid(x=True, y=True, alpha=1)
@@ -211,35 +249,16 @@ class ControlWindow(QMainWindow):
         # Supervision Information
         self.model.supervisor_information.signals.supervisor_name_changed.connect(self._on_supervisor_name_changed)
         self.model.supervisor_information.signals.supervised_changed.connect(self._on_supervised_changed)
-        self.model.supervisor_information.signals.supervisor_model_changed.connect(self._on_supervised_model_changed)
-
-
 
     # ==================================================================================================================
     # Slots
     # ==================================================================================================================
-    def _on_supervisor_sweep_start_wavelength_changed(self, sweep_start_wavelength):
-        print(f"Sweep Start Wavelength: {sweep_start_wavelength}")
-
-    def _on_supervisor_sweep_end_wavelength_changed(self, sweep_end_wavelength):
-        print(f"Sweep End Wavelength: {sweep_end_wavelength}")
-
 
     def _on_supervisor_name_changed(self, supervisor_name):
         self.supervisor_info.supervisor_name = supervisor_name
 
     def _on_supervised_changed(self, supervised):
         self.supervisor_info.supervised = supervised
-
-    def _on_supervised_model_changed(self):
-       self.model.supervisor_information.supervisor_model.signals.sweep_start_wavelength_changed.connect(
-           self._on_supervisor_sweep_start_wavelength_changed
-       )
-
-       self.model.supervisor_information.supervisor_model.signals.sweep_stop_wavelength_changed.connect(
-           self._on_supervisor_sweep_end_wavelength_changed
-
-       )
 
     def _on_dwf_version_changed(self, dwf_version):
         """
@@ -432,9 +451,16 @@ class ControlWindow(QMainWindow):
         if len(self.model.capturing_information.recorded_samples) > 0:
             self.scope_captured.clear()
             # print(self.ad2device.recorded_samples)
-            d = self.model.capturing_information.recorded_samples_preview
 
-            self.scope_captured.plot(d, pen=pg.mkPen(width=1))
+            # Downsample the data
+            downsampled_data = downsample_data(
+                self.model.capturing_information.recorded_samples, 
+                previewDataPoints
+            )
+
+            # Plot the downsampled data
+            self.scope_captured.plot(downsampled_data, pen=pg.mkPen(width=1))
+
             # print(f"Length: {len(self.controller.recorded_sample_stream)}")
 
         #if len(self.controller.status_dqueue) > 0:
@@ -449,8 +475,12 @@ class ControlWindow(QMainWindow):
         # print(self.ad2device.recorded_samples)
 
         self.scope_original.plot(
-            np.array(self.controller.streaming_dqueue),  # [::100],
-            pen=pg.mkPen(width=1))
+            downsample_data(
+                np.array(self.controller.streaming_dqueue),
+                previewDataPoints
+            ),
+            pen=pg.mkPen(width=1)
+        )
         # self._ui.lcd_unconsumed_stream.display(self.model.capturing_information.unconsumed_stream_samples)
 
     # ============== Connected Device Information

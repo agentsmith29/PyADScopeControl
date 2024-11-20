@@ -121,7 +121,7 @@ class AD2ScopeModel:
         return self._dwf_version
 
     @dwf_version.setter
-    def dwf_version(self, value: Array or str):
+    def dwf_version(self, value: Array | str):
         if not isinstance(value, str):
             self._dwf_version = str(value.value.decode('UTF-8'))
         else:

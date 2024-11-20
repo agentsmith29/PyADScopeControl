@@ -12,6 +12,7 @@ from PySide6.QtWidgets import QMessageBox
 from numpy import ndarray
 
 from ADScopeControl.controller.mp_AD2Capture.MPCaptDevice import MPCaptDevice
+from ADScopeControl.controller.sweepHelpers import ramp
 from ADScopeControl.model.AD2ScopeModel import AD2ScopeModel
 from ADScopeControl.model.AD2Constants import AD2Constants
 
@@ -315,6 +316,9 @@ class BaseADScopeController(mpPy6.CProcessControl):
                          columns=['Amplitude']))
 
         self.set_recorded_data_time_axis()
+        self.model.capturing_information.recorded_samples_df = self.model.supervisor_information.process_capture(
+            self.model.capturing_information.recorded_samples_df
+        )
 
     def stop_capture(self):
         self.start_capture_flag.value = 0
