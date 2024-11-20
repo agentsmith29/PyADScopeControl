@@ -249,34 +249,16 @@ class ControlWindow(QMainWindow):
         # Supervision Information
         self.model.supervisor_information.signals.supervisor_name_changed.connect(self._on_supervisor_name_changed)
         self.model.supervisor_information.signals.supervised_changed.connect(self._on_supervised_changed)
-        self.model.supervisor_information.signals.supervisor_model_changed.connect(self._on_supervised_model_changed)
-
-
 
     # ==================================================================================================================
     # Slots
     # ==================================================================================================================
-    def _on_supervisor_sweep_start_wavelength_changed(self, sweep_start_wavelength):
-        print(f"Sweep Start Wavelength: {sweep_start_wavelength}")
-
-    def _on_supervisor_sweep_end_wavelength_changed(self, sweep_end_wavelength):
-        print(f"Sweep End Wavelength: {sweep_end_wavelength}")
-
 
     def _on_supervisor_name_changed(self, supervisor_name):
         self.supervisor_info.supervisor_name = supervisor_name
 
     def _on_supervised_changed(self, supervised):
         self.supervisor_info.supervised = supervised
-
-    def _on_supervised_model_changed(self):
-       self.model.supervisor_information.supervisor_model.signals.sweep_start_wavelength_changed.connect(
-           self._on_supervisor_sweep_start_wavelength_changed
-       )
-
-       self.model.supervisor_information.supervisor_model.signals.sweep_stop_wavelength_changed.connect(
-           self._on_supervisor_sweep_end_wavelength_changed
-       )
 
     def _on_dwf_version_changed(self, dwf_version):
         """

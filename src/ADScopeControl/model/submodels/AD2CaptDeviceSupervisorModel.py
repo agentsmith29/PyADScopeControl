@@ -28,12 +28,6 @@ class AD2CaptDeviceSupervisorModel:
         self._supervisor: object = None
         self._supervisor_model: object = None
 
-        self._wl_sweep_start: float = 0.0
-        self._wl_sweep_stop: float = 0.0
-        self._velocity: float = 0.0
-        self._acceleration: float = 0.0
-        self._deceleration: float = 0.0
-
     # ==================================================================================================================
     # Connected Device Information
     # ==================================================================================================================
@@ -75,43 +69,9 @@ class AD2CaptDeviceSupervisorModel:
         self._supervisor_model = value
         self.signals.supervisor_model_changed.emit()
 
-    @property
-    def sweep_start_wavelength(self) -> float:
-        return self._wl_sweep_start
-
-    @sweep_start_wavelength.setter
-    def sweep_start_wavelength(self, value: float):
-        self._wl_sweep_start = value
-
-
-    @property
-    def sweep_stop_wavelength(self) -> float:
-        return self._wl_sweep_stop
-
-    @sweep_stop_wavelength.setter
-    def sweep_stop_wavelength(self, value: float):
-        self._wl_sweep_stop = value
-
-    @property
-    def velocity(self) -> float:
-        return self._velocity
-
-    @velocity.setter
-    def velocity(self, value: float):
-        self._velocity = value
-
-    @property
-    def acceleration(self) -> float:
-        return self._acceleration
-
-    @acceleration.setter
-    def acceleration(self, value: float):
-        self._acceleration = value
-
-    @property
-    def deceleration(self) -> float:
-        return self._deceleration
-
-    @deceleration.setter
-    def deceleration(self, value: float):
-        self._deceleration = value
+    def process_capture(self, data):
+        try:
+            data = self.supervisor.process_capture(data)
+        except Exception as e:
+            self.logger.error(f"Error while processing capture by supervisor: {e}")
+        return data
