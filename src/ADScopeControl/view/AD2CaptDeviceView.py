@@ -408,22 +408,6 @@ class ControlWindow(QMainWindow):
             # To get acceleration, deceleration, etc..
             self.controller.read_supervisor_state()
 
-            # Display a message box
-            self.msg_finished_capture = QMessageBox()
-            self.msg_finished_capture.setIcon(QMessageBox.Icon.Information)
-
-            self.msg_finished_capture.setText(f"Capture finished! Supervisor Information:\n"
-                                              f"Start: {self.model.supervisor_information.sweep_start_wavelength}\n"
-                                              f"End: {self.model.supervisor_information.sweep_stop_wavelength}\n"
-                                              f"Velocity: {self.model.supervisor_information.velocity}\n"
-                                              f"Acceleration: {self.model.supervisor_information.acceleration}\n"
-                                              f"Deceleration: {self.model.supervisor_information.deceleration}")
-
-            self.msg_finished_capture.setWindowTitle("Capture finished")
-            self.msg_finished_capture.setStandardButtons(QMessageBox.StandardButton.Ok)
-            self.msg_finished_capture.show()
-
-
     def _on_ready_for_recording_changed(self, ready):
         if ready:
             self.capture_update_timer.start()

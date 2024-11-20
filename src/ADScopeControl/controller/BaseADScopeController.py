@@ -233,15 +233,8 @@ class BaseADScopeController(mpPy6.CProcessControl):
         self.model.capturing_information.device_capturing_state = state
 
     def read_supervisor_state(self):
-        if self.model.supervisor_information.supervised and self.model.supervisor_information.supervisor_model is not None:
-            self.model.supervisor_information.sweep_start_wavelength = (
-                self.model.supervisor_information.supervisor_model.laser_config.wl_sweep_start.get())
-            self.model.supervisor_information.sweep_stop_wavelength = (
-                self.model.supervisor_information.supervisor_model.laser_config.wl_sweep_stop.get())
-            self.model.supervisor_information.velocity = self.model.supervisor_information.supervisor_model.laser_config.velocity.get()
-            self.model.supervisor_information.acceleration = self.model.supervisor_information.supervisor_model.laser_config.acceleration.get()
-            self.model.supervisor_information.deceleration = self.model.supervisor_information.supervisor_model.laser_config.deceleration.get()
-
+        pass
+    
     def set_ad2_acq_status(self, record):
         if record:
             self.model.start_recording = True
