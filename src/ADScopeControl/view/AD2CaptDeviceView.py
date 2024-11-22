@@ -20,8 +20,6 @@ from ADScopeControl.view.widget.WidgetCapturingInformation import WidgetCapturin
     WidgetSupervisionInformation
 from ADScopeControl import __version__, __description__, __author__, __license__, __url__
 
-from pandasgui import show as pdview
-
 # get the version of the current module, given in the pyproject.toml
 
 
@@ -141,11 +139,6 @@ class ControlWindow(QMainWindow):
         self.act_save_data.setShortcut('Ctrl+S')
         self.file_menu.addAction(self.act_save_data)
 
-        self.act_view_data = QAction('View Data', self)
-        self.act_view_data.triggered.connect(self.view_data)
-        self.act_view_data.setShortcut('Ctrl+Alt+S')
-        self.file_menu.addAction(self.act_view_data)
-
         self.file_menu.addSeparator()
 
         self.act_about = QAction('About', self)
@@ -167,10 +160,6 @@ class ControlWindow(QMainWindow):
         if file_path:
             self.model.capturing_information.recorded_samples_df.to_csv(file_path)
             self.status_bar.showMessage(f"Data saved to {file_path}")
-
-    def view_data(self):
-        self.controller.create_dataframe()
-        pdview(self.model.capturing_information.recorded_samples_df)
 
     def _init_UI_live_plot(self):
         area = DockArea()

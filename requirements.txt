@@ -5,7 +5,6 @@ PySide6
 scipy
 rich
 pyqtgraph
-pandasgui
 toml
 
 # my packages
