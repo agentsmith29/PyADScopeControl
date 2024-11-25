@@ -65,7 +65,7 @@ class ADScopeSimulator(BaseADScopeController):
                     self.logger.info(f"[{self.pref} Report] Start command received.")
                     self.model.capturing_finished = False
                     self.model.device_capturing_state = True
-                    self.model.recorded_samples = []
+                    self.model.recorded_samples = self.model.recorded_samples.clear()
                     timestamp = datetime.now()
                     t0 = time.time()
                 else:

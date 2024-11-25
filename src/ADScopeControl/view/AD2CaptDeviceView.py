@@ -3,6 +3,7 @@ import os
 
 
 import numpy as np
+from numpy import ndarray
 import pyqtgraph as pg
 from PySide6.QtCore import QTimer
 from PySide6.QtGui import QAction, QIcon, QPixmap
@@ -23,28 +24,14 @@ from ADScopeControl import __version__, __description__, __author__, __license__
 # get the version of the current module, given in the pyproject.toml
 
 
-def downsample_data(data, num_points):
-    """
-    Downsample the data by selecting points at equal intervals.
+def downsample_data(data: ndarray, num_points: int):
 
-    Args:
-        data (list): The original data list.
-        num_points (int): The desired number of data points.
-
-    Returns:
-        list: The downsampled data list.
-    """
-    if num_points >= len(data):
+    if num_points >= data.shape[0]:
         return data
 
-    interval = len(data) // num_points
-    downsampled_data = [data[i * interval] for i in range(num_points)]
-
-    # If the length of the data is not exactly divisible by the interval,
-    # append the last point to the downsampled data.
-    if len(data) % num_points != 0:
-        downsampled_data.append(data[-1])
-
+    interval = len(data) // (num_points - 1)
+    downsampled_data = data[::interval]
+    downsampled_data = np.r_[downsampled_data, data[-1]]
     return downsampled_data
 
 previewDataPoints = 10000
@@ -101,15 +88,15 @@ class ControlWindow(QMainWindow):
         # Timer for periodically updating the plot
         self.capture_update_timer = QTimer()
         self.capture_update_timer.setInterval(50)
-        self.capture_update_timer.timeout.connect(self._on_capture_update_plot)
+        self.capture_update_timer.timeout.connect(self.update_capture)
 
         self.stream_update_timer = QTimer()
         self.stream_update_timer.setInterval(50)
-        self.stream_update_timer.timeout.connect(self._on_stream_update_timer_timeout)
+        self.stream_update_timer.timeout.connect(self.update_stream)
 
         self.autostop_capture = QTimer()
-        self.autostop_capture.setInterval(1000)
-        self.autostop_capture.timeout.connect(self.stop_capture_by_timer)
+        self.autostop_capture.setInterval(5000)
+        self.autostop_capture.timeout.connect(self.stop_capture)
 
         # Connect the signals and controls
         self._connect_config_properties()
@@ -324,29 +311,24 @@ class ControlWindow(QMainWindow):
         self._ui.sb_acquisition_rate.setRange(1, 1e9)
         self._ui.sb_acquisition_rate.setValue(sample_rate)
 
-    def stop_capture_by_timer(self):
+    def start_capture(self):
+        self._ui.btn_record.setChecked(True)
+        self.controller.start_capture()
         self.autostop_capture.start()
+        self.capture_update_timer.start()
 
+    def stop_capture(self):
         self._ui.btn_record.setChecked(False)
         self.controller.stop_capture()
+        self.autostop_capture.stop()
+        self.capture_update_timer.stop()
+        self.update_capture()
 
     def _ui_on_btn_recording_clicked(self):
         if not self.model.capturing_information.device_capturing_state == AD2Constants.CapturingState.RUNNING():
-            self.capture_update_timer.setInterval(40)
-            self._ui.btn_record.setChecked(True)
-            self.controller.start_capture()
-            self.autostop_capture.start()
-            # spawn a qthread, that automatically stops the recording after a certain time
-            self.capture_update_timer.start()
+            self.start_capture()
         else:
-            self.capture_update_timer.setInterval(1000)
-            self._ui.btn_record.setChecked(False)
-            self.controller.stop_capture()
-
-            #print("Done")
-            #print(len(self.model.capturing_information.recorded_samples_preview))
-
-            #print("Stopped")
+            self.stop_capture()
 
     def _ui_on_btn_reset_clicked(self):
         self.scope_captured.clear()
@@ -394,8 +376,6 @@ class ControlWindow(QMainWindow):
             self.capt_info.led_is_capt.set_color(color="red")
             self.capt_info.lbl_is_capt.setText(AD2Constants.CapturingState.STOPPED(True))
             self._ui.btn_record.setChecked(False)
-            # To get acceleration, deceleration, etc..
-            self.controller.read_supervisor_state()
 
     def _on_ready_for_recording_changed(self, ready):
         if ready:
@@ -412,41 +392,28 @@ class ControlWindow(QMainWindow):
         self.dev_info.serial_number = serial_number
 
     # ============== Plotting
-    def _on_capture_update_plot(self):
+    def update_capture(self):
         # append to  self.scope_captured
-        #self.scope_captured.app
 
-        if self.controller.capture_data_queue.empty() and self.model.capturing_information.stop_recording:
-            self.model.capturing_information.recorded_samples_preview.clear()
-            for rc in self.model.capturing_information.recorded_samples:
-                self.model.capturing_information.recorded_samples_preview.append(rc)
-
-        if len(self.model.capturing_information.recorded_samples) > 0:
-            self.scope_captured.clear()
-            # print(self.ad2device.recorded_samples)
-
-            # Downsample the data
-            downsampled_data = downsample_data(
-                self.model.capturing_information.recorded_samples, 
-                previewDataPoints
+        if not self.controller.capture_data_queue.empty():
+            # Get the data and append
+            self.model.capturing_information.recorded_samples.append(
+                self.controller.capture_data_queue.get()
             )
+            self.autostop_capture.start()
 
-            # Plot the downsampled data
-            self.scope_captured.plot(downsampled_data, pen=pg.mkPen(width=1))
+        # Downsample the data
+        downsampled_data = downsample_data(
+            self.model.capturing_information.recorded_samples.array, 
+            previewDataPoints
+        )
 
-            # print(f"Length: {len(self.controller.recorded_sample_stream)}")
+        # Plot the downsampled data
+        self.scope_captured.clear()
+        self.scope_captured.plot(downsampled_data, pen=pg.mkPen(width=1))
 
-        #if len(self.controller.status_dqueue) > 0:
-        # print(self.controller.status_dqueue)
-        #    self.model.samples_captured = self.controller.status_dqueue[-1]["captured"]
-        # self.model.samples_lost = d[1]["lost"]
-        # self.model.samples_corrupted = d[1]["corrupted"]
-        #self._ui.lcd_unconsumed_capture.display(self.model.unconsumed_capture_samples)
-
-    def _on_stream_update_timer_timeout(self):
+    def update_stream(self):
         self.scope_original.clear()
-        # print(self.ad2device.recorded_samples)
-
         self.scope_original.plot(
             downsample_data(
                 np.array(self.controller.streaming_dqueue),
@@ -478,24 +445,6 @@ class ControlWindow(QMainWindow):
 
     def _on_ain_bits_changed(self, bits):
         pass
-
-    #def _on_start_recording_changed(self, start_recording):
-    #    self.logger.debug(f"Start Recording: {start_recording}")
-    #    if start_recording:
-    #        self.capture_update_timer.start()
-    #        self._ui.btn_stop.setEnabled(True)
-    #        # self._ui.btn_start_capture.setStyleSheet(PlayPushButton.style_pause())
-    #        self._ui.btn_start_capture.pause()
-    #        self._ui.btn_start_capture.setText("Pause Capture")
-
-    #def _on_stop_recording_changed(self, stop_recording):
-    #    self.logger.debug(f"Stop Recording: {stop_recording}")
-    #    if stop_recording:
-    #        self.capture_update_timer.stop()
-    #        self._ui.btn_stop.setEnabled(False)
-    #        # self._ui.btn_start_capture.setStyleSheet(CSSPlayPushButton.style_play())
-    #        self._ui.btn_start_capture.play()
-    #        self._ui.btn_start_capture.setText("Start Capture")
 
     def _on_pause_recording_changed(self, pause_recording):
         self._ui.btn_stop.setEnabled(True)

@@ -606,12 +606,10 @@ class MPCaptDevice(mpPy6.CProcess, ):
                         self.logger.info(
                             "**************************** START command received. Acquisition started.")
                         time_capture_started = time.time()
-                    capture_started = True
-                    capture_ended = False
+                        capture_started = True
                     self.capture_data_queue.put(arr)
                 elif self.start_capture_flag.value == int(False) and capture_started:
                     capture_started = False
-                    capture_ended = True
                     self.logger.info(
                         "**************************** STOP command received. Acquisition stopped.")
                     self.capture_process_state(AD2Constants.CapturingState.STOPPED())
@@ -620,10 +618,7 @@ class MPCaptDevice(mpPy6.CProcess, ):
                     self.logger.info(
                         f"Acquisition stopped after {time_captured} seconds. Captured {capture_samples} "
                         f"samples. Resulting in a time of {capture_samples / self.sample_rate} s.")
-                    self.stream_data_queue.put(arr)
-                else:
-                    self.stream_data_queue.put(arr)
-
+                self.stream_data_queue.put(arr)
 
         except Exception as e:
             self.logger.error(f"Error while capturing data from device: {e}")
