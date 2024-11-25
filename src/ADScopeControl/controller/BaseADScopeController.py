@@ -282,17 +282,23 @@ class BaseADScopeController(mpPy6.CProcessControl):
 
     def create_dataframe(self):
 
-        self.model.capturing_information.recorded_samples_df = pd.DataFrame(
-            self.model.capturing_information.recorded_samples,
-            columns=['Amplitude']
+        self.model.capturing_information.recorded_samples_df = (
+            self.model.capturing_information.recorded_samples.to_frame(
+                columns=['Amplitude']
+            )
         )
 
         self.set_recorded_data_time_axis()
-        self.model.capturing_information.recorded_samples_df = (
-            self.model.supervisor_information.process_capture(
-                self.model.capturing_information.recorded_samples_df
-            )
-        )
+
+        if self.model.supervisor_information.supervised:
+            try:
+                self.model.capturing_information.recorded_samples_df = (
+                    self.model.supervisor_information.process_capture(
+                        self.model.capturing_information.recorded_samples_df
+                    )
+                )
+            except AttributeError as e:
+                self.logger.info(f"Supervisor could not process capture: {e}")
 
     def stop_capture(self):
         self.start_capture_flag.value = 0

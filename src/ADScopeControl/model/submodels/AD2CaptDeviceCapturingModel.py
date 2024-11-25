@@ -50,6 +50,9 @@ class RecordedSamples:
     
     def __len__(self):
         return len(self.array)
+    
+    def to_frame(self, *args, **kwargs) -> pd.DataFrame:
+        return pd.DataFrame(self.array, *args, **kwargs)
 
 class AD2CaptDeviceCapturingModel:
     def __init__(self, config: CaptDeviceConfig):
