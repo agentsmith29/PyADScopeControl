@@ -1,4 +1,6 @@
 import pandas as pd
+from numpy import ndarray
+import numpy as np
 from PySide6.QtCore import QObject, Signal
 
 from ADScopeControl.CaptDeviceConfig import CaptDeviceConfig
@@ -16,9 +18,7 @@ class AD2CaptDeviceCapturingSignals(QObject):
     selected_ain_channel_changed = Signal(int)
     streaming_history_changed = Signal(int)
     # Acquired Signal Information
-    recorded_samples_changed = Signal(list)
     recording_time_changed = Signal(float)
-    samples_captured_changed = Signal(int)
     samples_lost_changed = Signal(int)
     samples_corrupted_changed = Signal(int)
     # Actually for the worker, these are the samples that have not been consumed yet by the UI thread.
@@ -33,6 +33,27 @@ class AD2CaptDeviceCapturingSignals(QObject):
     reset_recording_changed = Signal(bool)
     capturing_finished_changed = Signal(bool)
 
+class RecordedSamples:
+    def __init__(self, array: ndarray = None):
+        self.array = array if array is not None else np.empty((0,))
+
+    def append(self, array: ndarray):
+        self.array = np.append(self.array, array)
+        return self
+    
+    def __get__(self):
+        return self.array
+    
+    def clear(self):
+        self.array = np.empty((0,))
+        return self
+    
+    def __len__(self):
+        return len(self.array)
+    
+    def to_frame(self, *args, **kwargs) -> pd.DataFrame:
+        return pd.DataFrame(self.array, *args, **kwargs)
+
 class AD2CaptDeviceCapturingModel:
     def __init__(self, config: CaptDeviceConfig):
         self.signals = AD2CaptDeviceCapturingSignals()
@@ -40,8 +61,7 @@ class AD2CaptDeviceCapturingModel:
 
         # Acquired Signal Information
         # The number of recorded samples
-        self._recorded_samples: list = []
-        self.recorded_samples_preview: list = []
+        self.recorded_samples: RecordedSamples = RecordedSamples()
         self._recorded_samples_df: pd.DataFrame = None
         # The length of the recording
         self._recording_time: float = 0
@@ -68,16 +88,7 @@ class AD2CaptDeviceCapturingModel:
 # ==================================================================================================================
     # Acquired Signal Information
     # ==================================================================================================================
-    @property
-    def recorded_samples(self) -> list:
-        return self._recorded_samples
 
-    @recorded_samples.setter
-    def recorded_samples(self, value: list):
-        self._recorded_samples = value
-        self.samples_captured = len(self._recorded_samples)
-        # self.signals.num_of_current_recorded_samples_changed.emit(self.num_of_current_recorded_samples)
-        self.signals.recorded_samples_changed.emit(self.recorded_samples)
 
     @property
     def recorded_samples_df(self) -> list:
@@ -96,15 +107,6 @@ class AD2CaptDeviceCapturingModel:
     def recording_time(self, value: float):
         self._recording_time = value
         self.signals.recording_time_changed.emit(self.recording_time)
-
-    @property
-    def samples_captured(self) -> int:
-        return self._samples_captured
-
-    @samples_captured.setter
-    def samples_captured(self, value: int):
-        self._samples_captured = value
-        self.signals.samples_captured_changed.emit(self.samples_captured)
 
     @property
     def samples_lost(self) -> int:

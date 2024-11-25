@@ -32,9 +32,7 @@ class AD2CaptDeviceSignals(QObject):
     aout_channels_changed = Signal(list)
 
     # Acquired Signal Information
-    recorded_samples_changed = Signal(list)
     recording_time_changed = Signal(float)
-    samples_captured_changed = Signal(int)
     samples_lost_changed = Signal(int)
     samples_corrupted_changed = Signal(int)
     # Actually for the worker, these are the samples that have not been consumed yet by the UI thread.
@@ -69,10 +67,6 @@ class AD2CaptDeviceSignals(QObject):
 
     # Recording settings for starting, stopping and pausing
 
-    # Signal if new samples have been aquired
-
-    all_recorded_samples_changed = Signal(list)
-    num_of_current_recorded_samples_changed = Signal(int)
     measurement_time_changed = Signal(float)
 
     ad2_settings = Signal(dict)

@@ -1,9 +1,7 @@
 import logging
+from pathlib import Path
 import sys
-import os
-
-file_path, _ = os.path.split(os.path.realpath(__file__))
-src_path = f"{file_path}/../src"
+src_path = './src'
 sys.path.append(src_path)
 
 

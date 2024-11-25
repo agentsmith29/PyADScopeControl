@@ -231,9 +231,6 @@ class BaseADScopeController(mpPy6.CProcessControl):
 
     def _on_capture_process_state_changed(self, state):
         self.model.capturing_information.device_capturing_state = state
-
-    def read_supervisor_state(self):
-        pass
     
     def set_ad2_acq_status(self, record):
         if record:
@@ -267,9 +264,6 @@ class BaseADScopeController(mpPy6.CProcessControl):
     # ==================================================================================================================
     #
     # ==================================================================================================================
-    def clear_data(self):
-        self.model.recorded_samples = []
-        self.model.recorded_sample_stream = []
 
     def set_recorded_data_time_axis(self, func=None):
 
@@ -286,32 +280,25 @@ class BaseADScopeController(mpPy6.CProcessControl):
             )
         )
 
-    # def start_capture(self, clear=True):
-    #    print(f"Start capture. Clear {clear}")
-    #    self.start_capture_flag.value = 1
-    #    if clear:
-    #        self.model.recorded_samples = []
-    #        self.model.recorded_sample_stream = []
-    #    self.model.start_recording = True
-    #    self.model.stop_recording = False
-    # self.model.device_capturing_state = AD2Constants.CapturingState.RUNNING()
-
     def create_dataframe(self):
 
-        # self.model.supervisor_information.sweep_start_wavelength
-        # self.model.supervisor_information.sweep_stop_wavelength
-        # self.model.supervisor_information.velocity
-        # self.model.supervisor_information.acceleration
-        # self.model.supervisor_information.deceleration
-
         self.model.capturing_information.recorded_samples_df = (
-            pd.DataFrame(self.model.capturing_information.recorded_samples,
-                         columns=['Amplitude']))
+            self.model.capturing_information.recorded_samples.to_frame(
+                columns=['Amplitude']
+            )
+        )
 
         self.set_recorded_data_time_axis()
-        self.model.capturing_information.recorded_samples_df = self.model.supervisor_information.process_capture(
-            self.model.capturing_information.recorded_samples_df
-        )
+
+        if self.model.supervisor_information.supervised:
+            try:
+                self.model.capturing_information.recorded_samples_df = (
+                    self.model.supervisor_information.process_capture(
+                        self.model.capturing_information.recorded_samples_df
+                    )
+                )
+            except AttributeError as e:
+                self.logger.info(f"Supervisor could not process capture: {e}")
 
     def stop_capture(self):
         self.start_capture_flag.value = 0
@@ -321,13 +308,12 @@ class BaseADScopeController(mpPy6.CProcessControl):
 
     def reset_capture(self):
         self.logger.info(f"[{self.pref} Task] Resetting capture...")
+        self.stop_capture()
+        self.model.capturing_information.recorded_samples = (
+            self.model.capturing_information.recorded_samples.clear()
+        )
         if self.model.capturing_information.device_capturing_state == AD2Constants.CapturingState.RUNNING():
-            self.stop_capture()
-            self.model.capturing_information.recorded_samples = []
             self.start_capture()
-        else:
-            self.stop_capture()
-            self.model.capturing_information.recorded_samples = []
         self.model.measurement_time = 0
 
     # ==================================================================================================================
