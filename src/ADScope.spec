@@ -2,10 +2,10 @@
 
 
 a = Analysis(
-    ['ADScope.py'],
+    ['../ADScope.py'],
     pathex=[],
     binaries=[],
-    datas=[('pyproject.toml', '.')],
+    datas=[('../pyproject.toml', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
