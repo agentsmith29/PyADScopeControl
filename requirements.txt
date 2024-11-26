@@ -6,6 +6,7 @@ scipy
 rich
 pyqtgraph
 toml
+pyinstaller
 
 # my packages
 mpPy6
