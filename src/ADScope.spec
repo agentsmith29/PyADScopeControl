@@ -15,7 +15,6 @@ a = Analysis(
     optimize=0,
     onefile=True,
     windowed=True,
-    datas=[('pyproject.toml', '.')],
 )
 pyz = PYZ(a.pure)
 
