@@ -1,0 +1,22 @@
+name: PyInstaller
+on:
+  push:
+    branches:
+      - main
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Install dependencies
+        run: |
+          pip install pyinstaller
+      - name: Build executable
+        run: |
+          pyinstaller src/ADScope.spec
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ADScope.exe
+          path: dist/ADScope.exe
