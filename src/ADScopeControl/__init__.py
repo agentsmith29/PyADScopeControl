@@ -13,16 +13,34 @@ from pathlib import Path
 
 from WidgetCollection.Tools.PyProjectExtractor import extract_pyproject_info
 
-from . import Helpers
+def toml_exists(path: Path):
+    return (path / 'pyproject.toml').exists()
 
-# Directly in the repo
+def resolve_path(path):
+    if getattr(sys, "frozen", False):
+        # If the 'frozen' flag is set, we are in bundled-app mode!
+        p = Path(sys._MEIPASS) / path
+    else:
+        # Normal development mode. Use os.getcwd() or __file__ as appropriate in your case...
+        p = path
+    return p.resolve()
+
+def get_pyprojecttoml() -> Path:
+    # is found in ../../pyconfig.toml
+    pytoml_via_git = resolve_path(Path('../..'))
+    if toml_exists(pytoml_via_git):
+        return pytoml_via_git
+    pytoml_via_pip = resolve_path(Path('.'))
+    if toml_exists(pytoml_via_pip):
+        return pytoml_via_pip
+    return resolve_path(Path(__file__))
 
 # ======================================================================================================================
 # The pyconfig.toml file is needed, to get the metadata. Depending on the installation method (pip or git) the file
 # is found in different places.
 # ======================================================================================================================
-pytoml = Helpers.get_pyprojecttoml()
 
+pytoml = get_pyprojecttoml()
 
 def try_and_set(func, *args, **kwargs):
     try:

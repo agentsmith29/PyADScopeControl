@@ -3,6 +3,7 @@ from pathlib import Path
 import sys
 src_path = './src'
 sys.path.append(src_path)
+from multiprocessing import freeze_support
 
 
 from PySide6.QtWidgets import QApplication
@@ -15,7 +16,7 @@ import ADScopeControl as CaptDevice
 #logging.disable(logging.INFO)
 
 if __name__ == "__main__":
-
+    freeze_support()
     def setup_logging():
         for log_name, log_obj in logging.Logger.manager.loggerDict.items():
             if log_name != '<module name>':
