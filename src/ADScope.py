@@ -1,8 +1,5 @@
 import logging
-from pathlib import Path
 import sys
-src_path = './src'
-sys.path.append(src_path)
 from multiprocessing import freeze_support
 
 
