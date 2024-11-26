@@ -7,6 +7,7 @@ Package Version:
 
 import ctypes
 import os
+import sys
 import pathlib
 from pathlib import Path
 
@@ -29,14 +30,13 @@ def try_and_set(func, *args, **kwargs):
     except Exception as e:
         print(f"Error reading '{args[1]}' from {pathlib.Path(args[0])}: {e}")
         return "unknown"
-
-
+    
 __rootdir__ = os.path.dirname(os.path.realpath(__file__))
-__version__ = try_and_set(extract_pyproject_info, pytoml.parent, "version")
-__author__ = try_and_set(extract_pyproject_info, pytoml.parent, "author")
-__description__ = try_and_set(extract_pyproject_info, pytoml.parent, "description")
-__license__ = try_and_set(extract_pyproject_info, pytoml.parent, "license")
-__url__ = try_and_set(extract_pyproject_info, pytoml.parent, "url")
+__version__ = try_and_set(extract_pyproject_info, pytoml, "version")
+__author__ = try_and_set(extract_pyproject_info, pytoml, "author")
+__description__ = try_and_set(extract_pyproject_info, pytoml, "description")
+__license__ = try_and_set(extract_pyproject_info, pytoml, "license")
+__url__ = try_and_set(extract_pyproject_info, pytoml, "url")
 # For correctly display the icon in the taskbar
 
 myappid = f'agentsmith29.ADScopeControl.{__version__}'
