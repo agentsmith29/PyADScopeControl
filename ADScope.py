@@ -1,19 +1,20 @@
 import logging
 import sys
+from pathlib import Path
 from multiprocessing import freeze_support
 
 
 from PySide6.QtWidgets import QApplication
 from rich.logging import RichHandler
 
+sys.path.append(Path('./src'))
 import ADScopeControl as CaptDevice
-
-
 
 #logging.disable(logging.INFO)
 
 if __name__ == "__main__":
     freeze_support()
+
     def setup_logging():
         for log_name, log_obj in logging.Logger.manager.loggerDict.items():
             if log_name != '<module name>':
@@ -26,15 +27,20 @@ if __name__ == "__main__":
             ]
         )
 
-
     setup_logging()
     app = QApplication()
 
     # The config class, that stores the configuration for the scope
     # using the confPy6 package (https://github.com/agentsmith29/confPy6).
+    
+    
     conf = CaptDevice.Config()
-    # Enable the log
-    conf.internal_log_enabled = False
+    
+    conf_file = Path('./ADScopeConfig.yaml')
+    if conf_file.exists():
+        logging.info(f"Loading {conf_file}")
+        conf.load(conf_file, as_auto_save=True)
+    conf.autosave(enable=True, path='./')
 
     # --- Create the model, controller, and view. ---
 
