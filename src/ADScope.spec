@@ -2,7 +2,7 @@
 
 
 a = Analysis(
-    ['../ADScope.py'],
+    ['ADScope.py'],
     pathex=[],
     binaries=[],
     datas=[('../pyproject.toml', '.')],

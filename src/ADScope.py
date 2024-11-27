@@ -7,7 +7,6 @@ from multiprocessing import freeze_support
 from PySide6.QtWidgets import QApplication
 from rich.logging import RichHandler
 
-sys.path.append(Path('./src'))
 import ADScopeControl as CaptDevice
 
 #logging.disable(logging.INFO)
