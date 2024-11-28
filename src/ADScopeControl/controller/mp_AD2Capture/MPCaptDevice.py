@@ -28,7 +28,7 @@ class MPCaptDevice(mpPy6.CProcess, ):
         return wrapper
 
     def __init__(self, state_queue: Queue, cmd_queue: Queue,
-                 streaming_data_queue: Queue, capture_data_queue: Queue,
+                 streaming_data_queue: Queue,
                  start_capture_flag: Value,
                  kill_capture_flag: Value,
                  kill_flag: Value,
@@ -42,7 +42,6 @@ class MPCaptDevice(mpPy6.CProcess, ):
         self.start_capture_flag: Value = start_capture_flag
         self.kill_capture_flag: Value = kill_capture_flag
         self.stream_data_queue = streaming_data_queue
-        self.capture_data_queue = capture_data_queue
 
         # WaveForms api objects and handles
         self.dwf = None
@@ -607,7 +606,6 @@ class MPCaptDevice(mpPy6.CProcess, ):
                             "**************************** START command received. Acquisition started.")
                         time_capture_started = time.time()
                         capture_started = True
-                    self.capture_data_queue.put(arr)
                 elif self.start_capture_flag.value == int(False) and capture_started:
                     capture_started = False
                     self.logger.info(
@@ -616,7 +614,7 @@ class MPCaptDevice(mpPy6.CProcess, ):
                     time_capture_stopped = time.time()
                     time_captured = time_capture_stopped - time_capture_started
                     self.logger.info(
-                        f"Acquisition stopped after {time_captured} seconds. Captured {capture_samples} "
+                        f"Acquisition stopped after {time_captured} seconds "
                         f"samples. Resulting in a time of {capture_samples / self.sample_rate} s.")
                 self.stream_data_queue.put(arr)
 
@@ -651,13 +649,11 @@ if __name__ == "__main__":
     cmd_queue = Queue()
 
     streaming_data_queue = Queue()
-    capture_data_queue = Queue()
     start_capture_flag = Value('i', 0)
     kill_capture_flag = Value('i', 0)
 
     mpcapt = MPCaptDevice(state_queue, cmd_queue,
                           streaming_data_queue,
-                          capture_data_queue,
                           start_capture_flag,
                           kill_capture_flag, False
                           )

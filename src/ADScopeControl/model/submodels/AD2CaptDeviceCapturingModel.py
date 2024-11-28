@@ -33,16 +33,27 @@ class AD2CaptDeviceCapturingSignals(QObject):
     reset_recording_changed = Signal(bool)
     capturing_finished_changed = Signal(bool)
 
-class RecordedSamples:
-    def __init__(self, array: ndarray = None):
+
+def downsample_data(data: ndarray, num_points: int):
+    if num_points >= data.shape[0]:
+        return data
+
+    interval = len(data) // (num_points - 1)
+    downsampled_data = data[::interval]
+    downsampled_data = np.r_[downsampled_data, data[-1]]
+    return downsampled_data
+
+class Recording:
+    def __init__(
+            self, array: ndarray = None, 
+            show_number: int = None
+            ):
         self.array = array if array is not None else np.empty((0,))
+        self.show_number = show_number
 
     def append(self, array: ndarray):
         self.array = np.append(self.array, array)
         return self
-    
-    def __get__(self):
-        return self.array
     
     def clear(self):
         self.array = np.empty((0,))
@@ -53,6 +64,41 @@ class RecordedSamples:
     
     def to_frame(self, *args, **kwargs) -> pd.DataFrame:
         return pd.DataFrame(self.array, *args, **kwargs)
+    
+    def downsample(self):
+        return downsample_data(self.array, self.show_number)
+    
+# class SignalingRecording(Recording):
+#     plot_signal = Signal(bool)
+
+#     def __init__(
+#             self, *args,
+#             replot_number: int = 1,
+#             **kwargs
+#             ):
+#         super().__init__(*args, **kwargs)
+#         self.replot_increment = 0
+#         self.replot_number = replot_number
+
+
+#     def append(self, array: ndarray):
+#         super().append(array)
+#         self.replot_increment += len(array)
+#         if self.replot_increment >= self.replot_number:
+#             self.replot_increment = 0
+#             self.plot_signal.emit(True)
+#         return self
+    
+class Stream(Recording):
+    def __init__(self, *args, max_number: int = None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.max_number = max_number
+
+    def append(self, array: ndarray):
+        new_array = np.append(self.array, array)
+        if self.max_number:
+            self.array = new_array[-self.max_number:]
+        return self
 
 class AD2CaptDeviceCapturingModel:
     def __init__(self, config: CaptDeviceConfig):
@@ -61,22 +107,15 @@ class AD2CaptDeviceCapturingModel:
 
         # Acquired Signal Information
         # The number of recorded samples
-        self.recorded_samples: RecordedSamples = RecordedSamples()
+        self.stream = Stream(show_number=10000, max_number=1000)
+        self.capture = Recording(show_number=10000)
+
         self._recorded_samples_df: pd.DataFrame = None
         # The length of the recording
         self._recording_time: float = 0
 
-        # Number of the captured, lost and corrupted samples
-        self._number_samples_captured: int = 0
-        self._number_samples_lost: int = 0
-        self._number_samples_corrupted: int = 0
-
         # Flag if the capturing is finished
         self._capturing_finished: bool = False
-
-        # Actually for the worker, these are the samples that have not been consumed yet by the UI thread.
-        self._unconsumed_stream_samples: int = 0
-        self._unconsumed_capture_samples: int = 0
 
         # Recording Flags (starting, stopping and pausing)
         self._device_capturing_state: AD2Constants.CapturingState = AD2Constants.CapturingState.STOPPED()

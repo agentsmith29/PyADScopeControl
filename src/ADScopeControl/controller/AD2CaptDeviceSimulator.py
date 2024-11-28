@@ -5,13 +5,9 @@ import scipy
 from PySide6.QtCore import Slot
 
 from ADScopeControl.controller.BaseADScopeController import BaseADScopeController
-from ADScopeControl.model.AD2ScopeModel import AD2ScopeModel
-
 
 class ADScopeSimulator(BaseADScopeController):
 
-    def __init__(self, ad2capt_model: AD2ScopeModel):
-        super().__init__(ad2capt_model)
 
     def connect_device(self, device_id):
         self.logger.info("Connecting to simulator")
