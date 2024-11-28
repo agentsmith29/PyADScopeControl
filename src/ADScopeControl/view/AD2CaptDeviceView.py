@@ -23,17 +23,6 @@ from ADScopeControl import __version__, __description__, __author__, __license__
 
 # get the version of the current module, given in the pyproject.toml
 
-
-def downsample_data(data: ndarray, num_points: int):
-
-    if num_points >= data.shape[0]:
-        return data
-
-    interval = len(data) // (num_points - 1)
-    downsampled_data = data[::interval]
-    downsampled_data = np.r_[downsampled_data, data[-1]]
-    return downsampled_data
-
 previewDataPoints = 10000
 
 class ControlWindow(QMainWindow):
@@ -93,10 +82,6 @@ class ControlWindow(QMainWindow):
         self.stream_update_timer = QTimer()
         self.stream_update_timer.setInterval(50)
         self.stream_update_timer.timeout.connect(self.update_stream)
-
-        self.autostop_capture = QTimer()
-        self.autostop_capture.setInterval(5000)
-        self.autostop_capture.timeout.connect(self.stop_capture)
 
         # Connect the signals and controls
         self._connect_config_properties()
@@ -314,13 +299,11 @@ class ControlWindow(QMainWindow):
     def start_capture(self):
         self._ui.btn_record.setChecked(True)
         self.controller.start_capture()
-        self.autostop_capture.start()
         self.capture_update_timer.start()
 
     def stop_capture(self):
         self._ui.btn_record.setChecked(False)
         self.controller.stop_capture()
-        self.autostop_capture.stop()
         self.capture_update_timer.stop()
         self.update_capture()
 
@@ -393,35 +376,19 @@ class ControlWindow(QMainWindow):
 
     # ============== Plotting
     def update_capture(self):
-        # append to  self.scope_captured
-
-        if not self.controller.capture_data_queue.empty():
-            # Get the data and append
-            self.model.capturing_information.recorded_samples.append(
-                self.controller.capture_data_queue.get()
-            )
-            self.autostop_capture.start()
-
-        # Downsample the data
-        downsampled_data = downsample_data(
-            self.model.capturing_information.recorded_samples.array, 
-            previewDataPoints
-        )
-
         # Plot the downsampled data
         self.scope_captured.clear()
-        self.scope_captured.plot(downsampled_data, pen=pg.mkPen(width=1))
+        self.scope_captured.plot(
+            self.model.capturing_information.capture.downsample(), 
+            pen=pg.mkPen(width=1)
+        )
 
     def update_stream(self):
         self.scope_original.clear()
         self.scope_original.plot(
-            downsample_data(
-                np.array(self.controller.streaming_dqueue),
-                previewDataPoints
-            ),
+            self.model.capturing_information.stream.downsample(),
             pen=pg.mkPen(width=1)
         )
-        # self._ui.lcd_unconsumed_stream.display(self.model.capturing_information.unconsumed_stream_samples)
 
     # ============== Connected Device Information
     def _on_num_of_connected_devices_changed(self, num_of_connected_devices):

@@ -55,7 +55,6 @@ class BaseADScopeController(mpPy6.CProcessControl):
 
         self.lock = Lock()
         self.stream_data_queue = Queue()
-        self.capture_data_queue = Queue()
 
         if start_capture_flag is None:
             self.start_capture_flag = Value('i', 0, lock=self.lock)
@@ -69,7 +68,6 @@ class BaseADScopeController(mpPy6.CProcessControl):
         self.register_child_process(
             MPCaptDevice,
             self.stream_data_queue,
-            self.capture_data_queue,
             self.start_capture_flag,
             self.kill_capture_flag
         )
@@ -187,7 +185,6 @@ class BaseADScopeController(mpPy6.CProcessControl):
         """
         self.kill_capture_flag.value = int(False)
         self.streaming_dqueue = deque(maxlen=self.model.capturing_information.streaming_deque_length)
-        self.thread_manager.start(self.qt_consume_data)
         self.thread_manager.start(self.qt_stream_data)
 
     def stop_capturing_process(self):
@@ -283,7 +280,7 @@ class BaseADScopeController(mpPy6.CProcessControl):
     def create_dataframe(self):
 
         self.model.capturing_information.recorded_samples_df = (
-            self.model.capturing_information.recorded_samples.to_frame(
+            self.model.capturing_information.recording.to_frame(
                 columns=['Amplitude']
             )
         )
@@ -309,8 +306,8 @@ class BaseADScopeController(mpPy6.CProcessControl):
     def reset_capture(self):
         self.logger.info(f"[{self.pref} Task] Resetting capture...")
         self.stop_capture()
-        self.model.capturing_information.recorded_samples = (
-            self.model.capturing_information.recorded_samples.clear()
+        self.model.capturing_information.capture = (
+            self.model.capturing_information.capture.clear()
         )
         if self.model.capturing_information.device_capturing_state == AD2Constants.CapturingState.RUNNING():
             self.start_capture()
@@ -319,68 +316,17 @@ class BaseADScopeController(mpPy6.CProcessControl):
     # ==================================================================================================================
     def start_device_process(self):
         self.logger.info(f"[{self.pref} Task] Starting capturing process...")
-        # self.logger.debug(f"Dataqueue maxlen={int(self.model.duration_streaming_history * self.model.sample_rate)}")
-
-        # self.proc = Process(target=mp_capture,
-        #               args=(
-        #                   self.stream_data_queue, self.capture_data_queue, self.state_queue,
-        #                   self.start_capture_flag, self.end_process_flag,
-        #                   device_id, self.model.selected_ain_channel, self.model.sample_rate)
-        #               )
-        # self.proc.start()
-
-        # self.thread_manager.moveToThread(())
-
-        # self.thread_manager.start(self.qt_get_state)
-
-    def qt_consume_data(self):
-        itoogle = 0
-        while not self.kill_thread:
-            t = time.time()
-            try:
-                capture_data = self.capture_data_queue.get(block=True, timeout=1)
-
-                if isinstance(capture_data, ndarray):
-                    # print(f"Stream data queue size {len(stream_data)}")
-                    for d in capture_data:
-                        self.model.capturing_information.recorded_samples.append(d)
-
-                        if itoogle == math.ceil(self.model.capturing_information.sample_rate / 1000):
-                            self.model.capturing_information.recorded_samples_preview.append(d)
-                            itoogle = 0
-                        else:
-                            itoogle = itoogle + 1
-
-                t_end = time.time()
-                # print(f"Time to get data {t_end-t}")
-            except Exception as e:
-               pass
-               #self.logger.info(f"Timeout reached. No data in queue {self.stream_data_queue.qsize()} or"
-               #                 f"{e}")
-        self.logger.info("Streaming data consume thread ended")
 
     def qt_stream_data(self):
-        itoogle = 0
-
+        self.logger.info("Streaming data thread started")
         while not self.kill_thread:
-            t = time.time()
-            try:
-                stream_data = self.stream_data_queue.get(block=True, timeout=1)
-                if isinstance(stream_data, ndarray):
-                    # print(f"Stream data queue size {len(stream_data)}")
-                    for d in stream_data:
-                        if itoogle == math.ceil(self.model.capturing_information.sample_rate / 1000):
-                            self.streaming_dqueue.append(d)
-                            itoogle = 0
-                        else:
-                            itoogle = itoogle + 1
-                t_end = time.time()
-                # print(f"Time to get data {t_end-t}")
-            except Exception as e:
-               pass
-               # self.logger.info(f"Timeout reached. No data in queue {self.stream_data_queue.qsize()} or"
-               #                  f"{e}")
-        self.logger.info("Streaming data consume thread ended")
+            if not self.stream_data_queue.empty():
+                self.logger.debug(f"Streaming data queue size: {self.stream_data_queue.qsize()}")
+                d = self.stream_data_queue.get(block=True, timeout=1)
+                self.model.capturing_information.stream.append(d)
+                if self.start_capture_flag.value == 1:
+                    self.model.capturing_information.capture.append(d)
+        self.logger.info("Streaming data thread ended")
 
     def qt_get_state(self):
         while not self.kill_thread and not bool(self.end_process_flag.value):
