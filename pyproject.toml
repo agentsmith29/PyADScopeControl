@@ -10,7 +10,7 @@ packages = ["src/ADScopeControl"]
 
 [project]
 name = "PyADScopeControl"
-version = "1.2.4"
+version = "1.2.5"
 authors = [
   { name="Christoph Schmidt", email="cschmidt.fs@gmail.com" },
 ]
