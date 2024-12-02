@@ -280,7 +280,7 @@ class BaseADScopeController(mpPy6.CProcessControl):
     def create_dataframe(self):
 
         self.model.capturing_information.recorded_samples_df = (
-            self.model.capturing_information.recording.to_frame(
+            self.model.capturing_information.capture.to_frame(
                 columns=['Amplitude']
             )
         )
