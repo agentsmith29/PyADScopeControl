@@ -297,14 +297,10 @@ class ControlWindow(QMainWindow):
         self._ui.sb_acquisition_rate.setValue(sample_rate)
 
     def start_capture(self):
-        self._ui.btn_record.setChecked(True)
         self.controller.start_capture()
-        self.capture_update_timer.start()
 
     def stop_capture(self):
-        self._ui.btn_record.setChecked(False)
         self.controller.stop_capture()
-        self.capture_update_timer.stop()
         self.update_capture()
 
     def _ui_on_btn_recording_clicked(self):
@@ -352,13 +348,16 @@ class ControlWindow(QMainWindow):
             self.capt_info.led_is_capt.set_color(color="green")
             self.capt_info.lbl_is_capt.setText(AD2Constants.CapturingState.RUNNING(True))
             self._ui.btn_record.setChecked(True)
+            self.capture_update_timer.start()
         elif capturing == AD2Constants.CapturingState.PAUSED():
             self.capt_info.led_is_capt.set_color(color="yellow")
             self.capt_info.lbl_is_capt.setText(AD2Constants.CapturingState.PAUSED(True))
+            self.capture_update_timer.stop()
         elif capturing == AD2Constants.CapturingState.STOPPED():
             self.capt_info.led_is_capt.set_color(color="red")
             self.capt_info.lbl_is_capt.setText(AD2Constants.CapturingState.STOPPED(True))
             self._ui.btn_record.setChecked(False)
+            self.capture_update_timer.stop()
 
     def _on_ready_for_recording_changed(self, ready):
         if ready:
